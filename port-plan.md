@@ -240,6 +240,15 @@ test all pass.
 **Done when:** PDF.js renders correctly under the final CSP, and the Pages
 deploy works.
 
+**Deploy done 2026-09-28** (PDF.js part still open). Notes:
+
+- `.github/workflows/deploy.yml`: every push and PR runs `npm ci`,
+  `npm audit` (not gating) and `npm test` on Node 26; on `main` the tested
+  `dist/` is uploaded and deployed. Actions are pinned to commit SHAs.
+  Pages is set to deploy from Actions (`build_type: workflow`).
+- `BASE_URL=https://day4125.github.io/sidebench/ npm run test:e2e` runs the
+  network-block test against the live site; green on the first deploy.
+
 ### 4. Shell and design system
 
 - Layout, sidebar (shadcn Sidebar), theme toggle (light/dark via class on
