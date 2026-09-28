@@ -8,20 +8,15 @@ import {
   type PDFDocumentProxy,
   type RenderTask,
 } from "pdfjs-dist";
-import { getTool } from "@/tools/registry";
+import { AppShell } from "@/app/AppShell";
 import { openPdf } from "./pdfjs";
 
 export function PdfView() {
-  const tool = getTool("pdf-compare");
   const [files, setFiles] = useState<File[]>([]);
 
   return (
-    <main className="mx-auto max-w-7xl p-6">
-      <a href="./" className="text-sm text-muted-foreground hover:underline">
-        ← sidebench
-      </a>
-      <h1 className="mt-4 text-2xl font-semibold">{tool.name}</h1>
-      <p className="mt-1 text-muted-foreground">
+    <AppShell tool="pdf-compare">
+      <p className="text-muted-foreground">
         Förhandsversion: visar en eller två PDF:er sida vid sida.
       </p>
       <label className="mt-6 inline-flex cursor-pointer items-center gap-3 rounded-md border px-4 py-2 text-sm hover:bg-muted">
@@ -39,7 +34,7 @@ export function PdfView() {
           <PdfDocument key={`${i}:${file.name}:${file.lastModified}`} file={file} />
         ))}
       </div>
-    </main>
+    </AppShell>
   );
 }
 

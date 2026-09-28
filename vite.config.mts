@@ -35,14 +35,34 @@ function csp(): Plugin {
   };
 }
 
+// Shared <head> tags for every page. theme-init.js is a classic blocking
+// script (see the file); both live in public/ and are served as they are.
+function head(): Plugin {
+  let base = "/";
+  return {
+    name: "sidebench-head",
+    configResolved: (config) => {
+      base = config.base;
+    },
+    transformIndexHtml: () => [
+      { tag: "link", attrs: { rel: "icon", type: "image/svg+xml", href: `${base}favicon.svg` }, injectTo: "head" },
+      { tag: "script", attrs: { src: `${base}theme-init.js` }, injectTo: "head" },
+    ],
+  };
+}
+
 // One HTML entry per tool; no client-side router.
 const pages = ["index", "deworder", "text", "pdfview"];
 
 export default defineConfig({
   base: "/sidebench/",
-  plugins: [react(), tailwindcss(), csp(), pdfjs()],
+  plugins: [react(), tailwindcss(), csp(), head(), pdfjs()],
   resolve: {
-    alias: { "@": resolve(import.meta.dirname, "src") },
+    alias: [
+      { find: "@", replacement: resolve(import.meta.dirname, "src") },
+      // CSP-safe stand-in, see the file.
+      { find: /^react-style-singleton$/, replacement: resolve(import.meta.dirname, "src/lib/style-singleton.ts") },
+    ],
   },
   build: {
     rollupOptions: {

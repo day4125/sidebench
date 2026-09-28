@@ -1,5 +1,15 @@
 // The tool registry: the single source for the sidebar nav and the landing
-// page grid. Ported from prodtools' static/tools.js (icons come in step 4).
+// page grid. Ported from prodtools' static/tools.js.
+import {
+  BookOpen,
+  BrushCleaning,
+  Calculator,
+  Diff,
+  Palette,
+  PenTool,
+  Type,
+  type LucideIcon,
+} from "lucide-react";
 
 export type ToolStatus = "live" | "soon";
 
@@ -8,6 +18,7 @@ export interface Tool {
   slug: string;
   /** Display name (sidebar and card heading). */
   name: string;
+  icon: LucideIcon;
   /** Page URL relative to the site base; null while not built. */
   href: string | null;
   status: ToolStatus;
@@ -21,6 +32,7 @@ export const tools: Tool[] = [
   {
     slug: "deworder",
     name: "html-deworder",
+    icon: BrushCleaning,
     href: "deworder.html",
     status: "live",
     tagline: "Gör Word-exporterade .html-filer redo för CMS-import",
@@ -31,6 +43,7 @@ export const tools: Tool[] = [
   {
     slug: "svg-viewer",
     name: "SVG-viewer",
+    icon: PenTool,
     href: null,
     status: "soon",
     tagline: "Granska, rendera och städa SVG-kod",
@@ -41,6 +54,7 @@ export const tools: Tool[] = [
   {
     slug: "text",
     name: "Textmanipulator",
+    icon: Type,
     href: "text.html",
     status: "live",
     tagline: "Små engångsoperationer på text",
@@ -51,6 +65,7 @@ export const tools: Tool[] = [
   {
     slug: "diff",
     name: "Diff checker",
+    icon: Diff,
     href: null,
     status: "soon",
     tagline: "Jämför två texter sida vid sida",
@@ -61,6 +76,7 @@ export const tools: Tool[] = [
   {
     slug: "pdf-compare",
     name: "PDF sida vid sida",
+    icon: BookOpen,
     href: "pdfview.html",
     status: "live",
     tagline: "Bläddra i två PDF:er samtidigt och flagga sidor med skillnader",
@@ -72,6 +88,7 @@ export const tools: Tool[] = [
   {
     slug: "color",
     name: "Färgväljare",
+    icon: Palette,
     href: null,
     status: "soon",
     tagline: "Palett, kontrast och formatkonvertering",
@@ -82,6 +99,7 @@ export const tools: Tool[] = [
   {
     slug: "pdf",
     name: "PDF-kalkylator",
+    icon: Calculator,
     href: null,
     status: "soon",
     tagline: "Sidantal, filstorlek och utfallszoner",

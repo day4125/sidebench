@@ -298,6 +298,46 @@ PDF.js notes:
   has nothing suitable.
 - New visual direction set in the tokens. Iterate here, not per tool.
 
+**First pass done 2026-09-28.** The visual direction needs a lot more
+work, but is deferred until real tool UIs exist to judge it against (after
+step 5); the tokens below are a placeholder direction, not a decision.
+Notes:
+
+- `src/app/AppShell.tsx` frames every page: shadcn Sidebar (`inset`
+  variant, collapses to icons with tooltips, a Sheet under 768 px) and a
+  header with the toggle plus the tool's icon, name and tagline from the
+  registry. `AppSidebar.tsx` lists live tools, then planned ones (disabled)
+  under "Kommer snart", with the theme toggle in the footer. The landing
+  page is two card grids from `registry.ts`. Each tool page wraps its
+  content in `<AppShell tool="slug">`.
+- **Icons:** `registry.ts` entries carry a lucide icon. The brand mark (a
+  workbench, `src/app/BrandMark.tsx`, and `public/favicon.svg`) is drawn on
+  lucide's grid because lucide has no bench.
+- **Theme:** saved choice, else the system's. `public/theme-init.js`, a
+  classic blocking script added to every page's `<head>` by a Vite plugin,
+  sets the class before first paint; a file rather than an inline script
+  keeps the CSP unchanged. `src/lib/theme.ts` flips it.
+- **Storage:** `src/lib/storage.ts` wraps localStorage under
+  `sidebench:site:` (`theme`, `sidebar`). shadcn's Sidebar saves its state
+  in a cookie; that was changed to `sidebench:site:sidebar`.
+- **CSP and Radix:** Radix's scroll lock (Sheet, Dialog, Select, menus)
+  injects an inline `<style>` through `react-style-singleton`, which the
+  CSP blocks. `src/lib/style-singleton.ts` replaces that package (Vite
+  alias) and applies the same CSS as a constructable stylesheet, which CSP
+  doesn't restrict, so `style-src` stays strict. Step 5's Select relies
+  on this.
+- **Other edits to shadcn source:** Swedish screen-reader strings; the
+  menu button's tooltip is kept closed while hidden (expanded or mobile),
+  since an open-but-hidden tooltip swallowed Escape.
+- **Tokens:** cool neutral surfaces with one teal accent. Light: primary
+  `#0f766e` (white text passes AA). Dark: surfaces from `#11141c`, primary
+  `#2dd4bf` with dark text.
+- **Tests:** `tests/e2e/shell.spec.ts` covers nav from the registry, the
+  theme (system default, saved choice, applied with the app's scripts
+  blocked), saved collapse and tooltips, the mobile menu (no CSP errors,
+  scroll locked, Escape closes), and storage (only `sidebench:site:*`
+  keys, no cookies).
+
 ### 5. Rebuild the deworder UI
 
 Rebuild `deworder-app.js` (~550 lines) as React components on top of the
@@ -342,6 +382,8 @@ network-block test is green on the page.
 - Extend the README with how to add a tool.
 
 ## Open decisions
+
+- **Visual direction:** revisit once the deworder UI (step 5) is built.
 
 - **PWA / offline install:** later, if wanted.
 
