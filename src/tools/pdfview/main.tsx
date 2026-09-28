@@ -1,4 +1,4 @@
 import { mount } from "@/app/mount";
-import { ToolPlaceholder } from "@/app/ToolPlaceholder";
+import { PdfView } from "./PdfView";
 
-mount(<ToolPlaceholder slug="pdf-compare" />);
+mount(<PdfView />);

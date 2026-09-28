@@ -6,6 +6,13 @@ import { join } from "node:path";
 const ALLOWED = [
   /^https?:\/\/www\.w3\.org\//, // XML/SVG namespaces
   /^https:\/\/react\.dev\/errors\//, // React's minified error messages
+  // PDF.js
+  /^http:\/\/www\.apache\.org\/licenses\/LICENSE-2\.0$/, // license comment
+  /^http:\/\/www\.xfa\.org\/schema\//, // XFA namespaces
+  /^http:\/\/ns\.adobe\.com\//, // XDP/XFDF/XMP namespaces
+  /^http:\/\/example\.com$/, // dummy base for URL parsing
+  /^https:\/\/foo\.bar$/, // dummy base for URL parsing
+  /^http:\/\/\$\{e\}$/, // prefix added to a PDF's "www." link text
 ];
 
 const files = readdirSync("dist", { recursive: true })

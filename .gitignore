@@ -1,5 +1,7 @@
 # Real Word exports for the differential test — confidential, never commit
 tests/unit/deworder/local/
+# Local-only test files (e.g. large PDFs for the PDF.js spike)
+tests/local/
 
 # Local-only docs
 AGENTS.md

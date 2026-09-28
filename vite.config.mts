@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
+import { pdfjs } from "./scripts/vite-plugin-pdfjs.mts";
 
 // The privacy rule from INTENT.md, enforced by the browser. GitHub Pages
 // can't set response headers, so the policy ships as a meta tag.
@@ -39,7 +40,7 @@ const pages = ["index", "deworder", "text", "pdfview"];
 
 export default defineConfig({
   base: "/sidebench/",
-  plugins: [react(), tailwindcss(), csp()],
+  plugins: [react(), tailwindcss(), csp(), pdfjs()],
   resolve: {
     alias: { "@": resolve(import.meta.dirname, "src") },
   },

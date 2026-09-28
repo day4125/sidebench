@@ -73,15 +73,16 @@ These make the privacy rule enforced by the build, not a convention:
    form-action 'none'`. GitHub Pages can't set response headers, so the
    meta tag is the only place for it. `connect-src 'none'` makes the
    browser refuse `fetch`/XHR/WebSocket even if a dependency tries. The
-   exact policy is confirmed in step 3 against PDF.js.
+   policy was confirmed unchanged against PDF.js in step 3.
 2. **Network-block e2e test.** Playwright opens every built page, runs each
    tool's main flow, and fails on any request that isn't to the local origin
    or a `blob:`/`data:` URL.
 3. **No remote URLs in the build output.** A CI check greps `dist/` for
    `http://` / `https://` outside known-safe strings (license comments, SVG
    namespaces).
-4. **PDF.js** keeps `isEvalSupported: false` even after the upgrade, as
-   defense in depth.
+4. **PDF.js** has no `eval` since 6.x (the `isEvalSupported` option and
+   the code path behind CVE-2024-4367 are gone), and WebAssembly stays off
+   so the CSP needs no `'wasm-unsafe-eval'` (see step 3).
 
 ## Delivery
 
@@ -105,7 +106,7 @@ These make the privacy rule enforced by the build, not a convention:
 
 - Runtime dependencies are pinned through the lockfile and kept few: React,
   `radix-ui`, `class-variance-authority`, `cn` (shadcn's replacement for
-  `clsx` + `tailwind-merge`, no dependencies), lucide, PDF.js, plus
+  `clsx` + `tailwind-merge`, no dependencies), lucide, `pdfjs-dist`, plus
   `tw-animate-css` and `@fontsource-variable/geist` (CSS and font files
   only). The `shadcn` CLI is a dev dependency; only its CSS is bundled.
 - Before adding a shadcn component, check what it installs. Components that
@@ -231,7 +232,7 @@ test all pass.
 ### 3. Spike: PDF.js and deploy
 
 - Current PDF.js through npm, via react-pdf (its React wrapper) or
-  `pdfjs-dist` directly. Keep `isEvalSupported: false`.
+  `pdfjs-dist` directly.
 - Render two real PDFs of about 200 pages each (the existing manual test
   case) under the CSP, with the worker running as its own file.
 - Deploy the scaffold to GitHub Pages with the Actions workflow, and run the
@@ -240,7 +241,7 @@ test all pass.
 **Done when:** PDF.js renders correctly under the final CSP, and the Pages
 deploy works.
 
-**Deploy done 2026-09-28** (PDF.js part still open). Notes:
+**Done 2026-09-28.** Deploy notes:
 
 - `.github/workflows/deploy.yml`: every push and PR runs `npm ci`,
   `npm audit` (not gating) and `npm test` on Node 26; on `main` the tested
@@ -248,6 +249,45 @@ deploy works.
   Pages is set to deploy from Actions (`build_type: workflow`).
 - `BASE_URL=https://day4125.github.io/sidebench/ npm run test:e2e` runs the
   network-block test against the live site; green on the first deploy.
+
+PDF.js notes:
+
+- **`pdfjs-dist` 6.3 directly, not react-pdf.** react-pdf adds eight runtime
+  packages (es-toolkit, clsx, tiny-invariant, …) for a thin wrapper, and
+  step 6 rebuilds the viewer UI anyway.
+- **The CSP stays as it was.** PDF.js normally fetches standard fonts,
+  CMaps, ICC profiles and wasm decoders; `connect-src 'none'` blocks all of
+  that. `src/tools/pdfview/pdfjs.ts` turns worker fetching off
+  (`useWorkerFetch: false`) and answers PDF.js's requests from a
+  `BinaryDataFactory` that reads bundled copies. `scripts/vite-plugin-pdfjs.mts`
+  turns each font/CMap into a lazy base64 chunk, loaded as a script, never
+  fetched.
+- **WebAssembly off** (`useWasm: false`): it would need `'wasm-unsafe-eval'`.
+  PDF.js then imports its pure-JS JPEG 2000 and JBIG2 decoders from
+  `pdfjs/wasm/` (emitted by the plugin under their original names). The
+  cost: ICC color profiles need wasm, so ICC-based colors use PDF.js's
+  approximate conversion. Revisit if color accuracy matters (e.g. CMYK
+  print PDFs), weighing it against loosening the CSP.
+- **Bundled standard fonts** (`useSystemFonts: false`), so a page looks
+  the same on every machine.
+- **Spike viewer** in `src/tools/pdfview/PdfView.tsx`: one or two PDFs side
+  by side, pages rendered near the viewport and freed when far away.
+  Throwaway UI; `pdfjs.ts` is what step 6 builds on.
+- **Tests** (`tests/e2e/pdfview.spec.ts`): `tests/e2e/fixtures/features.pdf`
+  (made by `scripts/make-pdf-fixture.mjs`) has one page each for standard
+  fonts, a predefined CMap and a JPEG 2000 image. The test checks pixels on
+  each, that the bundled font/CMap/decoder files were the ones loaded, and
+  that there are no off-origin requests, CSP violations or PDF.js warnings
+  (page and worker). A second test renders every page of up to two PDFs in
+  `tests/local/pdf/` (gitignored) side by side. With Think Python (244 pages)
+  and Think Stats (264 pages) from Green Tea Press: all 508 pages in about
+  a minute, clean, far pages freed. Spot-checked against Poppler
+  (`pdftoppm`): same layout and fonts.
+- Not covered: JBIG2 (no encoder here to make a fixture; it loads through
+  the same path as JPEG 2000) and PDFs not made with LaTeX (InDesign, Word).
+- The remote-URL check now allows a few PDF.js strings that are never
+  fetched: XML namespaces, a license comment, dummy base URLs for URL
+  parsing, and the `http://` prefix it adds to `www.` links.
 
 ### 4. Shell and design system
 
@@ -303,11 +343,12 @@ network-block test is green on the page.
 
 ## Open decisions
 
-- **PDF library:** react-pdf or `pdfjs-dist` directly. Settled in step 3.
 - **PWA / offline install:** later, if wanted.
 
 ## Decided
 
+- **PDF library:** `pdfjs-dist` directly; WebAssembly off, CSP unchanged
+  (2026-09-28).
 - **Hosting:** GitHub Pages (2026-09-28).
 - **Name and repo:** the new app is sidebench, in its own public repo;
   prodtools is kept as it is (2026-09-28).
