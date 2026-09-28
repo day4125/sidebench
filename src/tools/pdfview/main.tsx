@@ -1,4 +1,4 @@
 import { mount } from "@/app/mount";
-import { PdfView } from "./PdfView";
+import { PdfViewApp } from "./PdfViewApp";
 
-mount(<PdfView />);
+mount(<PdfViewApp />);

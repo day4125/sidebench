@@ -1,4 +1,4 @@
 import { mount } from "@/app/mount";
-import { ToolPlaceholder } from "@/app/ToolPlaceholder";
+import { DeworderApp } from "./DeworderApp";
 
-mount(<ToolPlaceholder slug="deworder" />);
+mount(<DeworderApp />);

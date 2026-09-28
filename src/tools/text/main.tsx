@@ -1,4 +1,4 @@
 import { mount } from "@/app/mount";
-import { ToolPlaceholder } from "@/app/ToolPlaceholder";
+import { TextApp } from "./TextApp";
 
-mount(<ToolPlaceholder slug="text" />);
+mount(<TextApp />);

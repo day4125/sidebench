@@ -299,8 +299,8 @@ PDF.js notes:
 - New visual direction set in the tokens. Iterate here, not per tool.
 
 **First pass done 2026-09-28.** The visual direction needs a lot more
-work, but is deferred until real tool UIs exist to judge it against (after
-step 5); the tokens below are a placeholder direction, not a decision.
+work, but is deferred until real tool UIs exist to judge it against (step
+7); the tokens below are a placeholder direction, not a decision.
 Notes:
 
 - `src/app/AppShell.tsx` frames every page: shadcn Sidebar (`inset`
@@ -324,8 +324,8 @@ Notes:
   injects an inline `<style>` through `react-style-singleton`, which the
   CSP blocks. `src/lib/style-singleton.ts` replaces that package (Vite
   alias) and applies the same CSS as a constructable stylesheet, which CSP
-  doesn't restrict, so `style-src` stays strict. Step 5's Select relies
-  on this.
+  doesn't restrict, so `style-src` stays strict. (Step 5 ended up using
+  native selects instead of Radix Select; see there.)
 - **Other edits to shadcn source:** Swedish screen-reader strings; the
   menu button's tooltip is kept closed while hidden (expanded or mobile),
   since an open-but-hidden tooltip swallowed Escape.
@@ -363,6 +363,65 @@ unchanged engine. Behavior to keep:
 fixtures, including loading and saving a `config.json`, and the
 network-block test is green on the page.
 
+**Done 2026-09-28.** Notes:
+
+- `src/tools/deworder/`: `DeworderApp.tsx` holds all state (content in
+  React state only) and the step indicator; `UploadStep`, `MappingStep`
+  and `PreviewStep` are the three steps. `mapping.ts` holds the legacy
+  config semantics as pure functions: the table's form from a config,
+  what `clean()` gets (only the detected classes), and the downloaded
+  `config.json` (the loaded config with the table on top, same key order,
+  2-space indent). `highlight.ts` is the legacy source highlighter,
+  returning tokens instead of an HTML string.
+- **Native selects, not Radix Select.** Radix Select's viewport injects an
+  inline `<style>` each time it opens, which the CSP blocks. shadcn's
+  `native-select` has no dependencies, no portal and no injected style,
+  and is what legacy used. `select.tsx` isn't installed.
+- **Previews under the CSP** (`src/lib/sandboxed-preview.ts`). A srcdoc
+  iframe inherits the page's CSP, so Word's `<style>` blocks and
+  `style=""` attributes were blocked and the "before" pane lost its look.
+  They're taken out before the srcdoc is built and applied after load
+  through CSSOM (constructable stylesheets, `el.style.cssText`), which CSP
+  doesn't restrict, so `style-src` stays strict. The preview also gets a
+  stricter CSP of its own (`default-src 'none'; img-src data:`): the page
+  policy allows `'self'`, so a relative `<img src="image001.png">` would
+  have sent a file name from the document to the host. `src`, `srcset`,
+  `background`, `poster` and `on*` attributes, scripts, links, `<base>`,
+  embeds and `<meta http-equiv>` (refresh navigates, which CSP doesn't
+  cover) are removed, and link clicks are cancelled. Only the previews
+  change; source, copy and download use the engine's output as it is.
+- **Known console noise:** the engine parses with `DOMParser`, and Chromium
+  checks the page CSP while parsing, so each inline style in an uploaded
+  document logs a CSP violation (the style isn't applied; the parsed DOM
+  and the output are unaffected). Fixing it would mean changing the engine
+  or loosening `style-src`; neither seemed worth it. The e2e test allows
+  exactly those violations, matched by the hash the browser reports.
+- **Deviations from legacy UI behavior** (the engine is untouched):
+  - A class found on several tags has several rows; they now share one
+    value. Legacy gave each row its own `<select>` and the last one won,
+    silently dropping an edit to an earlier row.
+  - Errors show inline (`role="alert"`) instead of `alert()`.
+  - A `table_mode` other than `flatten` in a loaded config shows as
+    "keep" (legacy showed an empty select and saved `""`); the engine
+    treats both as keep. A mapping target outside `ALLOWED_TARGETS` still
+    shows as `h1`, as legacy's select did.
+  - The collapsed table renders only its first five rows instead of
+    clipping them with CSS, so hidden rows aren't tabbable.
+- **Tests:** `tests/e2e/deworder.spec.ts` covers file picker, paste and
+  drag-and-drop (as windows-1252 bytes, like Word's exports), the golden
+  file through download, copy and source view, mapping edits, collapse,
+  options, reset, step navigation, loading prodtools' own `config.json`
+  (`tests/e2e/fixtures/legacy-config.json`) and a partial one, the
+  download format and reloading it, invalid JSON, the sandboxed previews
+  (styles applied, nothing loaded, links inert), heading navigation, and
+  `word-branches.html` through the UI under the CSP against the legacy
+  engine on a page without one. Every test also fails on any request
+  after page load (even same-origin), unexpected console errors, non-UI
+  localStorage keys or cookies. Unit tests: `tests/unit/deworder/ui.test.ts`
+  (mapping semantics, lossless highlighting) and
+  `tests/unit/sandboxed-preview.test.ts`. The two preview checks were
+  confirmed to fail with image `src` kept and with the CSSOM step removed.
+
 ### 6. Rebuild Textmanipulator and the PDF viewer
 
 - **Text:** port `static/text.js` (DOM-free) as a module with its tests,
@@ -372,7 +431,132 @@ network-block test is green on the page.
 - The "soon" tools from `tools.js` carry over into `registry.ts` as planned
   entries.
 
-### 7. Cut over
+**Done 2026-09-28.** Notes:
+
+- **Text engine:** `src/tools/text/engine.ts`, the legacy `text.js` with
+  ES exports and types only (type-stripped, it diffs against legacy as one
+  type assertion). The 13 legacy cases are in
+  `tests/unit/text/engine.test.ts`.
+- **Text UI:** `src/tools/text/TextApp.tsx`. Legacy's copy flow as it was:
+  an operation rewrites the text and its button turns into "Kopiera" (one
+  at a time), "Kopierad!" for 1.6 s, any edit resets every button, and a
+  failed copy selects the text. The info icons are shadcn Tooltips next to
+  their buttons (a button can't hold another). "Fler verktyg" stays a
+  native `<details>`. A screen-reader status line says when the text is
+  copied. `useFlash` gained a third item that cancels a running flash, so
+  a new copy button never inherits "Kopierad!".
+- **Geist, Latin subset only** (`globals.css`). The package's other
+  subsets (Latin Extended, Cyrillic, Vietnamese) load when a character in
+  their range is shown, so a subscript letter or pasted Polish text made a
+  request that told the host about the content. The text e2e test caught
+  it. The Latin subset covers Swedish and is loaded by the UI's own text;
+  anything else falls back to the system font.
+- **PDF layout:** `src/tools/pdfview/layout.ts`, the legacy `pdfview.js`
+  with ES exports and types only (type-stripped, it differs only in how
+  signatures wrap). The 15 legacy cases are in
+  `tests/unit/pdfview/layout.test.ts`.
+- **PDF viewer UI:** same features as legacy, rebuilt.
+  - `PdfViewApp.tsx` is step 1 (two drop zones, progress while every page
+    size is read, stale loads dropped by a token) and holds the files, the
+    stars, the B offset and the toast, so they survive closing and
+    reopening. It also stops a stray drop from opening a PDF in the tab.
+  - `Workspace.tsx` is the full-window review. It replaces the shell
+    rather than covering it (a `fixed` `<main>`, not the Fullscreen API).
+    Only the rows in the window range are rendered, from state. A fit mode's
+    scale is derived from the window and the files, so resizing and
+    swapping a file refit by themselves; a custom zoom is state. Every
+    scroll change (jump, zoom anchor, keeping the A page across an offset,
+    file or resize) goes through one `useLayoutEffect` once the new layout
+    is in the DOM. Zoom runs under `flushSync`, so the next Ctrl+wheel
+    event starts from the new layout.
+  - `PageCell.tsx` owns its canvas: an effect keyed on (file, page, render
+    scale) draws into a new canvas and swaps it in when done, freeing the
+    old one (width = 0). The render scale follows the zoom 150 ms after it
+    settles. A cell reused for another page drops the old picture at once.
+  - Changes from legacy: toolbar in shadcn buttons with lucide icons; the
+    stars menu is a shadcn Popover (Radix, non-modal: no injected style,
+    Escape closes it before the workspace); the "one file at a time"
+    message on a multi-file drop is gone (legacy overwrote it with "läser…"
+    at once, so it never showed); no step indicator (two steps, and the
+    workspace has its own "Tillbaka"). PDF.js 6 has no `doc.destroy()`;
+    documents are freed through `doc.loadingTask.destroy()`, and a file that
+    fails to open has its task destroyed too.
+- **Tests:** `tests/e2e/pdfview.spec.ts` replaces the spike's. It builds
+  PDFs in memory (`tests/e2e/make-pdf.ts`, any page count and size) for:
+  picking and refusing files (non-PDF, broken PDF), drop zones and stray
+  drops, row pairing with missing pages and the offset (clamped), the
+  buttons, page field and keys, stars (flag, list, jump, copy, clear,
+  Escape order, kept on reopen, cleared by a new pick), a failed copy,
+  zoom (fit modes, steps, Ctrl+wheel, re-render at the new size), drop to
+  replace a side (veil, toast, place and flags kept), virtualization, and
+  KB/sida. The spike's checks carry over: `features.pdf` pixels and bundled
+  chunks, and every page of two local PDFs (`tests/local/pdf/`, 264 rows
+  in about 25 s). The drop and zoom tests were confirmed to fail with the
+  zoom anchor removed and with the A page not kept across a change.
+- **Same-origin requests after load are allowed in the PDF tests,** unlike
+  the other tools, because PDF.js loads its worker and the font, CMap and
+  decoder chunks a document needs on demand (see "Open decisions").
+- **Lessons:**
+  - Playwright moves the mouse in one jump, and Radix Tooltip keeps a
+    tooltip open when the only pointer event after leaving the trigger is
+    inside its grace area. Move with `steps` to test closing on leave.
+  - `pkill -f "vite preview"` kills its own shell when the pattern appears
+    anywhere in the command line (a `pgrep` in the same line too). Use
+    `pkill -f "vite [p]review"`.
+  - Radix Popover (non-modal) and Tooltip work under the CSP.
+  - Step indicator and drop zones are still local to each tool
+    (`DeworderApp.tsx`, `UploadStep.tsx`, `PdfViewApp.tsx`); step 7
+    decides whether to share them.
+
+### 7. Visual direction and shared UI/UX
+
+With all three tools rebuilt, decide the look and the patterns they share,
+across tools rather than per tool:
+
+- The visual direction, set in the tokens (`globals.css`), replacing the
+  placeholder from step 4.
+- Shared patterns: step indicators, drop zones, action rows, copy and
+  download feedback, errors and status messages, info tooltips, empty
+  states, keyboard shortcuts. Extract what the tools share into
+  `src/app/` or `src/components/`, and make the tools consistent.
+- Layout: page width, how a tool uses the space next to the sidebar, and
+  full-window views like the PDF workspace.
+- Check light and dark, phone width, keyboard use and screen readers
+  across all pages.
+
+**Done when:** the tokens and shared patterns are decided and applied to
+every tool, and the e2e suite is green.
+
+**Progress:**
+
+- **PDF viewer is a pager (2026-09-28).** One pair of pages at a time
+  (A's page, gutter, B's page), with only those two pages loaded. Replaces
+  step 6's scrolling stack of every row.
+  - Opening a file reads only the page count; the up-front pass over every
+    page's size and its "sida N av M" progress are gone (`PdfFile.sizes`
+    removed). The workspace reads the two pages' sizes when a pair comes up
+    and shows it once they're known, so paging never flashes empty.
+  - Leaving a page frees its canvas (as before) and calls PDF.js's
+    `page.cleanup()`, so a page's parsed content and images don't pile up
+    in the document's cache.
+  - Fit modes fit the pair shown, so they refit per page (a landscape
+    page gets its own scale). A pair larger than the view scrolls inside it
+    and is centered while it fits (auto margins in a flex scroller); a new
+    pair starts at its top.
+  - Keys: Left/Right and Page Up/Down turn the page, Home/End as before;
+    Up/Down now scroll a zoomed pair instead of paging (handled by the
+    workspace, so they work wherever the focus is).
+  - Zoom anchors on the pair's on-screen box (measured before and after a
+    `flushSync`), replacing the row-based anchor math.
+  - `layout.ts`: `computeLayout`, `rowAt` and `windowRange` replaced by
+    `pairLayout` (sizes round down, so a fitted pair never overflows by a
+    pixel). Unit tests updated the same way.
+  - Tests: paging checks exactly two pages on screen after each key, Up/Down
+    scrolling and a new page starting at the top; the old virtualization
+    test now checks one row, two canvases, and that a left page's canvas is
+    emptied. The local 244/264-page pair still renders every page, clean.
+
+### 8. Cut over
 
 - Once the new deworder has parity, delete the legacy engine copy in
   `tests/unit/deworder/legacy/` and the differential test with it.
@@ -383,7 +567,18 @@ network-block test is green on the page.
 
 ## Open decisions
 
-- **Visual direction:** revisit once the deworder UI (step 5) is built.
+- **Visual direction:** decided in step 7, now that all three tools are
+  rebuilt.
+
+- **PDF.js support files loaded on demand.** The bundled standard fonts,
+  CMaps and JPEG 2000/JBIG2 decoders are separate files that load only
+  when a PDF needs one (step 3). The host's request log can therefore show
+  which standard fonts or CJK encodings a PDF uses: nothing of the text,
+  but more than "someone opened the page". It's the same kind of leak as
+  the Geist subsets (step 6), on a bigger scale: the CMaps are a few MB.
+  Options: preload them all with the page, keep only the standard fonts
+  eager, or cache them with the service worker (PWA) so they're fetched
+  once, independently of any document.
 
 - **PWA / offline install:** later, if wanted.
 
