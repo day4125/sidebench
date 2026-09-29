@@ -176,7 +176,7 @@ const STEPS = ["Ladda upp", "Mappa", "Förhandsgranska"];
 
 // Steps behind the current one are buttons; moving forward is left to each
 // step's own actions.
-function StepIndicator({ step, onBack }: { step: Step; onBack: (s: Step) => void }) {
+export function StepIndicator({ step, onBack }: { step: Step; onBack: (s: Step) => void }) {
   return (
     <nav aria-label="Steg">
       <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">

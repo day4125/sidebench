@@ -70,7 +70,7 @@ function isHtmlFile(file: File) {
   return file.type === "text/html" || /\.html?$/i.test(file.name || "");
 }
 
-function DropZone({ file, onFile }: { file: File | null; onFile: (file: File) => void }) {
+export function DropZone({ file, onFile }: { file: File | null; onFile: (file: File) => void }) {
   const [over, setOver] = useState(false);
 
   const hover = (e: DragEvent) => {

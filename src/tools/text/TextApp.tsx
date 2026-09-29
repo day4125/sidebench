@@ -83,7 +83,7 @@ const MORE: OpDef[] = [
 // ---------------------------------------------------------------------------
 // State: the text and the legacy copy flow.
 
-function useTextOps() {
+export function useTextOps() {
   const [text, setText] = useState("");
   const [copyOp, setCopyOp] = useState<Op | null>(null);
   const [copied, flashCopied, clearCopied] = useFlash();
@@ -130,7 +130,7 @@ function face(ops: Ops, def: OpDef) {
 // Buttons
 
 /** The lead action, full width. Explained in the toolbar's legend. */
-function CleanButton({ ops }: { ops: Ops }) {
+export function CleanButton({ ops }: { ops: Ops }) {
   const { copying, Icon, label } = face(ops, { op: "clean", label: "Rensa text", icon: Check });
   return (
     <Button
@@ -248,6 +248,43 @@ function MoreMenu({ ops }: { ops: Ops }) {
   );
 }
 
+/** The text field with the toolbar of operations along its bottom edge. */
+export function TextBox({ ops }: { ops: Ops }) {
+  return (
+    <div className="rounded-xl border bg-card shadow-xs focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
+      <label htmlFor="text-input" className="sr-only">
+        Text
+      </label>
+      <Textarea
+        id="text-input"
+        ref={ops.input}
+        value={ops.text}
+        onChange={(e) => ops.edit(e.target.value)}
+        spellCheck={false}
+        placeholder="Klistra in text här..."
+        className="field-sizing-fixed min-h-72 resize-none rounded-none rounded-t-xl border-0 bg-transparent p-4 shadow-none focus-visible:ring-0 md:text-base dark:bg-transparent"
+      />
+      <div
+        role="group"
+        aria-label="Textverktyg"
+        className="flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-b-xl border-t bg-muted/50 px-2 py-2 sm:gap-x-3 sm:px-2.5"
+      >
+        {GROUPS.map((g) => (
+          <div key={g.name} role="group" aria-label={g.name} className={pairCls}>
+            {g.ops.map((def) => (
+              <Square key={def.op} ops={ops} def={def} />
+            ))}
+          </div>
+        ))}
+        <div className="ml-auto flex sm:gap-0.5">
+          <Legend />
+          <MoreMenu ops={ops} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 
 export function TextApp() {
@@ -255,37 +292,7 @@ export function TextApp() {
   return (
     <AppShell tool="text">
       <div className="mx-auto flex max-w-3xl flex-col gap-3">
-        <div className="rounded-xl border bg-card shadow-xs focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
-          <label htmlFor="text-input" className="sr-only">
-            Text
-          </label>
-          <Textarea
-            id="text-input"
-            ref={ops.input}
-            value={ops.text}
-            onChange={(e) => ops.edit(e.target.value)}
-            spellCheck={false}
-            placeholder="Klistra in text här..."
-            className="field-sizing-fixed min-h-72 resize-none rounded-none rounded-t-xl border-0 bg-transparent p-4 shadow-none focus-visible:ring-0 md:text-base dark:bg-transparent"
-          />
-          <div
-            role="group"
-            aria-label="Textverktyg"
-            className="flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-b-xl border-t bg-muted/50 px-2 py-2 sm:gap-x-3 sm:px-2.5"
-          >
-            {GROUPS.map((g) => (
-              <div key={g.name} role="group" aria-label={g.name} className={pairCls}>
-                {g.ops.map((def) => (
-                  <Square key={def.op} ops={ops} def={def} />
-                ))}
-              </div>
-            ))}
-            <div className="ml-auto flex sm:gap-0.5">
-              <Legend />
-              <MoreMenu ops={ops} />
-            </div>
-          </div>
-        </div>
+        <TextBox ops={ops} />
         <CleanButton ops={ops} />
       </div>
       <p role="status" className="sr-only">
