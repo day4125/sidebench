@@ -1,6 +1,6 @@
 // PDF sida vid sida: pick an original (A) and a compressed copy (B), then
-// page through both, one pair of pages at a time, in a full-window
-// workspace. Rebuilt from prodtools'
+// page through both, one pair of pages at a time, in a workspace that
+// fills the tool's page and can go full-window. Rebuilt from prodtools'
 // static/pdfview-app.js on the ported layout math (layout.ts) and PDF.js
 // from pdfjs.ts.
 //
@@ -17,7 +17,7 @@ import { SIDE_NAME, firstFile, hasFiles, isPdf, type PdfFile, type Side, type To
 import { openPdf } from "./pdfjs";
 import { Workspace } from "./Workspace";
 
-interface PickerStatus {
+export interface PickerStatus {
   text: string;
   state: "loading" | "ok" | "error";
 }
@@ -117,49 +117,47 @@ export function PdfViewApp() {
     return () => window.removeEventListener("pagehide", hide);
   }, []);
 
-  if (open && files.a && files.b) {
-    return (
-      <Workspace
-        a={files.a}
-        b={files.b}
-        offset={offset}
-        onOffsetChange={setOffset}
-        stars={stars}
-        onStarsChange={setStars}
-        onDropFile={(side, file) => void handleFile(side, file)}
-        onClose={() => {
-          setOpen(false);
-          setToast(null);
-        }}
-        toast={toast}
-        onToast={showToast}
-      />
-    );
-  }
-
   return (
-    <AppShell tool="pdf-compare">
-      <div className="mx-auto flex max-w-4xl flex-col gap-6">
-        <p className="text-sm text-muted-foreground">
-          Välj originalet och den komprimerade versionen. Båda visas sida vid sida, en sida i taget, och bläddras tillsammans.
-        </p>
-        <div className="grid gap-4 md:grid-cols-2">
-          {(["a", "b"] as const).map((side) => (
-            <DropZone
-              key={side}
-              side={side}
-              status={status[side]}
-              onFile={(file) => void handleFile(side, file)}
-            />
-          ))}
+    <AppShell tool="pdf-compare" fill={open && !!files.a && !!files.b}>
+      {open && files.a && files.b ? (
+        <Workspace
+          a={files.a}
+          b={files.b}
+          offset={offset}
+          onOffsetChange={setOffset}
+          stars={stars}
+          onStarsChange={setStars}
+          onDropFile={(side, file) => void handleFile(side, file)}
+          onClose={() => {
+            setOpen(false);
+            setToast(null);
+          }}
+          toast={toast}
+          onToast={showToast}
+        />
+      ) : (
+        <div className="mx-auto flex max-w-4xl flex-col gap-6">
+          <p className="text-sm text-muted-foreground">
+            Välj originalet och den komprimerade versionen. Båda visas sida vid sida, en sida i taget, och bläddras tillsammans.
+          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            {(["a", "b"] as const).map((side) => (
+              <DropZone
+                key={side}
+                side={side}
+                status={status[side]}
+                onFile={(file) => void handleFile(side, file)}
+              />
+            ))}
+          </div>
+          <div className="flex justify-end">
+            <Button size="lg" disabled={!(files.a && files.b)} onClick={() => setOpen(true)}>
+              Öppna sida vid sida
+              <ArrowRight data-icon="inline-end" />
+            </Button>
+          </div>
         </div>
-        <div className="flex justify-end">
-          <Button size="lg" disabled={!(files.a && files.b)} onClick={() => setOpen(true)}>
-            Öppna sida vid sida
-            <ArrowRight data-icon="inline-end" />
-          </Button>
-        </div>
-      </div>
+      )}
     </AppShell>
   );
 }
@@ -170,7 +168,7 @@ interface ZoneProps {
   onFile: (file: File | null) => void;
 }
 
-function DropZone({ side, status, onFile }: ZoneProps) {
+export function DropZone({ side, status, onFile }: ZoneProps) {
   const [over, setOver] = useState(false);
 
   const hover = (e: DragEvent) => {

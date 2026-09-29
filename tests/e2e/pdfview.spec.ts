@@ -64,7 +64,7 @@ async function openBoth(page: Page, a: Payload, b: Payload) {
   await pick(page, "a", a);
   await pick(page, "b", b);
   await page.getByRole("button", { name: "Öppna sida vid sida" }).click();
-  await expect(page.getByRole("main", { name: "Granska sida vid sida" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Granska sida vid sida" })).toBeVisible();
 }
 
 const docs = (a: PageSize[], b: PageSize[]) => [pdfFile("a.pdf", "A", a), pdfFile("b.pdf", "B", b)] as const;
@@ -191,6 +191,38 @@ test("rows pair the pages, mark missing ones and follow the offset", async ({ ap
   await expect(offsetInput(app)).toHaveValue("-2");
 });
 
+test("the workspace opens under the tool header and goes fullscreen and back", async ({ app }) => {
+  await openBoth(app, ...docs(pages(3), pages(3)));
+  const region = app.getByRole("region", { name: "Granska sida vid sida" });
+  const header = app.getByRole("heading", { level: 1, name: "PDF sida vid sida" });
+  const scroller = app.getByTestId("scroller");
+  await expect(region).toHaveAttribute("data-fullscreen", "false");
+  await expect(header).toBeInViewport();
+  const normal = (await scroller.boundingBox())!;
+  // The view fills the rest of the window, no page scroll.
+  expect(await app.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight)).toBe(true);
+
+  await app.getByRole("button", { name: "Helskärm" }).click();
+  await expect(region).toHaveAttribute("data-fullscreen", "true");
+  const full = (await scroller.boundingBox())!;
+  expect(full.width).toBeGreaterThan(normal.width);
+  expect(full.height).toBeGreaterThan(normal.height);
+  expect(full.x).toBe(0);
+
+  // The pair shown stays through the switch; Escape leaves fullscreen first.
+  await app.keyboard.press("ArrowRight");
+  await expect(currentNumber(app)).toHaveText("2");
+  await app.keyboard.press("Escape");
+  await expect(region).toHaveAttribute("data-fullscreen", "false");
+  await expect(currentNumber(app)).toHaveText("2");
+  await app.keyboard.press("f");
+  await expect(region).toHaveAttribute("data-fullscreen", "true");
+  await app.keyboard.press("F");
+  await expect(region).toHaveAttribute("data-fullscreen", "false");
+  await app.keyboard.press("Escape");
+  await expect(app.getByRole("button", { name: "Öppna sida vid sida" })).toBeVisible();
+});
+
 test("paging: buttons, page field and keys, one pair at a time", async ({ app }) => {
   await openBoth(app, ...docs(pages(12), pages(12)));
   const prev = app.getByRole("button", { name: "Föregående sida" });
@@ -245,33 +277,33 @@ test("paging: buttons, page field and keys, one pair at a time", async ({ app })
 test("stars: flag, list, jump, copy, clear, and kept until new files are picked", async ({ app }) => {
   await openBoth(app, ...docs(pages(5), pages(5)));
   const toggle = app.getByRole("button", { name: /^Flaggade sidor: / });
-  const copy = app.getByRole("button", { name: /^Kopiera/ });
+  const menu = app.getByRole("dialog", { name: "Flaggade sidor" });
   await expect(toggle).toHaveAccessibleName("Flaggade sidor: 0");
-  await expect(copy).toBeDisabled();
+  // The star lives only in the toolbar, not between the pages.
+  await expect(app.getByRole("button", { name: /^Flagga sida/ })).toHaveCount(1);
 
   await app.keyboard.press("s");
   await app.keyboard.press("End");
   await app.getByRole("button", { name: "Flagga sida 5" }).click();
   await expect(app.getByRole("button", { name: "Flagga sida 5" })).toHaveAttribute("aria-pressed", "true");
   await app.keyboard.press("ArrowLeft");
+  await expect(app.getByRole("button", { name: "Flagga sida 4" })).toHaveAttribute("aria-pressed", "false");
   await app.keyboard.press("ArrowLeft");
   await app.keyboard.press("S");
   await expect(toggle).toHaveAccessibleName("Flaggade sidor: 3");
 
-  await copy.click();
-  await expect(app.getByRole("button", { name: "Kopierad!" })).toBeVisible();
-  expect(await app.evaluate(() => navigator.clipboard.readText())).toBe("1, 3, 5");
-
   await toggle.click();
-  const menu = app.getByRole("dialog", { name: "Flaggade sidor" });
   await expect(menu.getByLabel("Flaggade sidor som text")).toHaveValue("1, 3, 5");
+  await menu.getByRole("button", { name: "Kopiera" }).click();
+  await expect(menu.getByRole("button", { name: "Kopierad!" })).toBeVisible();
+  expect(await app.evaluate(() => navigator.clipboard.readText())).toBe("1, 3, 5");
   await menu.getByRole("button", { name: "1", exact: true }).click();
   await expect(pageInput(app)).toHaveValue("1");
 
   // Escape closes the menu first, then the workspace.
   await app.keyboard.press("Escape");
   await expect(menu).toBeHidden();
-  await expect(app.getByRole("main", { name: "Granska sida vid sida" })).toBeVisible();
+  await expect(app.getByRole("region", { name: "Granska sida vid sida" })).toBeVisible();
   await app.keyboard.press("Escape");
   await expect(app.getByRole("button", { name: "Öppna sida vid sida" })).toBeVisible();
 
@@ -291,14 +323,16 @@ test("stars: flag, list, jump, copy, clear, and kept until new files are picked"
   await expect(toggle).toHaveAccessibleName("Flaggade sidor: 0");
 });
 
-test("a failed copy opens the list selected instead", async ({ app }) => {
+test("a failed copy leaves the list selected", async ({ app }) => {
   await openBoth(app, ...docs(pages(2), pages(2)));
   await app.evaluate(() => {
     navigator.clipboard.writeText = () => Promise.reject(new Error("denied"));
   });
   await app.keyboard.press("s");
-  await app.getByRole("button", { name: /^Kopiera/ }).click();
-  const field = app.getByRole("dialog", { name: "Flaggade sidor" }).getByLabel("Flaggade sidor som text");
+  await app.getByRole("button", { name: /^Flaggade sidor: / }).click();
+  const menu = app.getByRole("dialog", { name: "Flaggade sidor" });
+  await menu.getByRole("button", { name: "Kopiera" }).click();
+  const field = menu.getByLabel("Flaggade sidor som text");
   await expect(field).toBeFocused();
   expect(await field.evaluate((el: HTMLInputElement) => el.value.slice(el.selectionStart!, el.selectionEnd!))).toBe("1");
   await expect(app.getByRole("status")).toHaveText("Kunde inte kopiera automatiskt – tryck Ctrl+C.");

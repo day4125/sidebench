@@ -1,5 +1,7 @@
-// The full-window review: one pair of pages at a time, [A page | gutter |
-// B page], paged together. Only the two pages shown are loaded: their sizes
+// The review: one pair of pages at a time, [A page | gutter | B page],
+// paged together. It fills the tool's page under the tool header, and
+// fullscreen (F) lays the same view over the whole window, sidebar and
+// header included. Only the two pages shown are loaded: their sizes
 // are read when the pair comes up, and each page frees its canvas and its
 // PDF.js resources when it goes (PageCell).
 //
@@ -8,7 +10,7 @@
 // edge, for the buttons and keys) in place.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode, type Ref } from "react";
 import { flushSync } from "react-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, Copy, Check, Minus, Plus, Star } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, Copy, Check, Maximize2, Minimize2, Minus, Plus, Star } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,6 +87,7 @@ export function Workspace({ a, b, offset, onOffsetChange, stars, onStarsChange, 
   const [customScale, setCustomScale] = useState(1);
   const [starsOpen, setStarsOpen] = useState(false);
   const [veil, setVeil] = useState<Side | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const numA = a.doc.numPages;
   const numB = b.doc.numPages;
@@ -252,7 +255,12 @@ export function Workspace({ a, b, offset, onOffsetChange, stars, onStarsChange, 
     const { row, rowSet, current } = latest.current;
     switch (e.key) {
       case "Escape":
-        onClose();
+        if (fullscreen) setFullscreen(false);
+        else onClose();
+        break;
+      case "f":
+      case "F":
+        setFullscreen(!fullscreen);
         break;
       case "ArrowLeft":
       case "PageUp":
@@ -322,14 +330,14 @@ export function Workspace({ a, b, offset, onOffsetChange, stars, onStarsChange, 
 
   return (
     <TooltipProvider>
-      <main
+      <section
         aria-label="Granska sida vid sida"
-        className="fixed inset-0 z-40 flex flex-col bg-background"
+        data-fullscreen={fullscreen}
+        className={cn("flex flex-col bg-background", fullscreen ? "fixed inset-0 z-40" : "relative min-h-0 min-w-0 flex-1")}
         onDragOver={dragOver}
         onDragLeave={dragLeave}
         onDrop={drop}
       >
-        <h1 className="sr-only">PDF sida vid sida</h1>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-b px-3 py-2 text-sm">
           <Button variant="ghost" onClick={onClose}>
             <ArrowLeft data-icon="inline-start" />
@@ -373,6 +381,8 @@ export function Workspace({ a, b, offset, onOffsetChange, stars, onStarsChange, 
           <OffsetInput value={effOffset} onCommit={(v) => onOffsetChange(clampOffset(v, numA, numB))} />
           <Sep />
           <StarsMenu
+            page={current.a}
+            onToggle={() => toggleStar(current.a)}
             stars={stars}
             text={starList}
             open={starsOpen}
@@ -392,6 +402,20 @@ export function Workspace({ a, b, offset, onOffsetChange, stars, onStarsChange, 
               {b.name}
             </span>
           </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={fullscreen ? "Avsluta helskärm" : "Helskärm"}
+                aria-pressed={fullscreen}
+                onClick={() => setFullscreen(!fullscreen)}
+              >
+                {fullscreen ? <Minimize2 /> : <Maximize2 />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{fullscreen ? "Avsluta helskärm (F eller Esc)" : "Helskärm (F)"}</TooltipContent>
+          </Tooltip>
         </div>
 
         <div
@@ -406,15 +430,13 @@ export function Workspace({ a, b, offset, onOffsetChange, stars, onStarsChange, 
               ref={pairEl}
               pair={pair}
               layout={lay}
-              starred={pair.pageA !== null && stars.has(pair.pageA)}
-              onStar={() => toggleStar(pair.pageA)}
               renderScale={renderScale}
             />
           )}
         </div>
 
         {veil && (
-          <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-50 grid grid-cols-2 gap-3 p-3">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-50 grid grid-cols-2 gap-3 p-3">
             {(["a", "b"] as const).map((side) => (
               <div
                 key={side}
@@ -431,7 +453,7 @@ export function Workspace({ a, b, offset, onOffsetChange, stars, onStarsChange, 
           </div>
         )}
         <ToastView toast={toast} />
-      </main>
+      </section>
     </TooltipProvider>
   );
 }
@@ -444,14 +466,12 @@ interface PairProps {
   ref: Ref<HTMLDivElement>;
   pair: Pair;
   layout: PairLayout;
-  starred: boolean;
-  onStar: () => void;
   renderScale: number;
 }
 
 // Centered by its auto margins while it fits the view; once it's larger,
 // it starts at the top left and the scroller scrolls it.
-function PagePair({ ref, pair, layout, starred, onStar, renderScale }: PairProps) {
+function PagePair({ ref, pair, layout, renderScale }: PairProps) {
   const { pageA: a, pageB: b } = pair;
   const slot = `${layout.slotW}px`;
   const numTitle = !a ? `Bara i den komprimerade (sida ${b})` : !b ? `Bara i originalet (sida ${a})` : undefined;
@@ -466,19 +486,7 @@ function PagePair({ ref, pair, layout, starred, onStar, renderScale }: PairProps
       <div className="flex justify-end">
         <PageCell side="a" file={pair.a} page={a} box={layout.a} renderScale={renderScale} />
       </div>
-      <div className="flex flex-col items-center gap-1 pt-1">
-        {a !== null && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-pressed={starred}
-            aria-label={`Flagga sida ${a}`}
-            onClick={onStar}
-            className={cn(starred ? "text-amber-500 hover:text-amber-500" : "text-muted-foreground")}
-          >
-            <Star className={cn(starred && "fill-current")} />
-          </Button>
-        )}
+      <div className="flex justify-center pt-1">
         <span
           title={numTitle}
           data-testid="page-number"
@@ -495,7 +503,7 @@ function PagePair({ ref, pair, layout, starred, onStar, renderScale }: PairProps
 }
 
 /** A number field that shows `value` until edited, then commits on Enter or blur. */
-function PageInput({ value, onCommit }: { value: string; onCommit: (n: number) => void }) {
+export function PageInput({ value, onCommit }: { value: string; onCommit: (n: number) => void }) {
   const [draft, setDraft] = useState<string | null>(null);
   const commit = () => {
     const n = parseInt(draft ?? "", 10);
@@ -525,7 +533,7 @@ function PageInput({ value, onCommit }: { value: string; onCommit: (n: number) =
  * B's page offset. Commits on the input's native change event: Enter, blur
  * after an edit, or a spinner/arrow step.
  */
-function OffsetInput({ value, onCommit }: { value: number; onCommit: (v: string) => void }) {
+export function OffsetInput({ value, onCommit }: { value: number; onCommit: (v: string) => void }) {
   const ref = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<string | null>(null);
   const commit = useRef(onCommit);
@@ -564,6 +572,9 @@ function OffsetInput({ value, onCommit }: { value: number; onCommit: (v: string)
 }
 
 interface StarsProps {
+  /** The A page shown, which the star button flags; null on a row with no A page. */
+  page: number | null;
+  onToggle: () => void;
   stars: ReadonlySet<number>;
   text: string;
   open: boolean;
@@ -573,51 +584,57 @@ interface StarsProps {
   onToast: (text: string) => void;
 }
 
-function StarsMenu({ stars, text, open, onOpenChange, onJump, onClear, onToast }: StarsProps) {
+/**
+ * The one place for flags: a split button whose star flags the page shown
+ * and whose count opens the list, with jump, copy and clear.
+ */
+export function StarsMenu({ page, onToggle, stars, text, open, onOpenChange, onJump, onClear, onToast }: StarsProps) {
   const [copied, flashCopied] = useFlash();
   const field = useRef<HTMLInputElement>(null);
-  // Set when a failed copy opens the menu to show the list selected.
-  const selectOnOpen = useRef(false);
   const count = stars.size;
+  const starred = page !== null && stars.has(page);
 
   async function copy() {
     try {
       await navigator.clipboard.writeText(text);
     } catch {
-      selectOnOpen.current = true;
-      if (open) selectField();
-      else onOpenChange(true);
+      // Leave the list selected for a manual copy.
+      field.current?.focus();
+      field.current?.select();
       onToast("Kunde inte kopiera automatiskt – tryck Ctrl+C.");
       return;
     }
     flashCopied();
   }
-  const selectField = () => {
-    selectOnOpen.current = false;
-    field.current?.focus();
-    field.current?.select();
-  };
 
   return (
-    <div className="flex items-center gap-1">
+    <div role="group" aria-label="Flaggor" className="flex items-center">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-pressed={starred}
+            aria-label={page === null ? "Flagga sida" : `Flagga sida ${page}`}
+            disabled={page === null}
+            onClick={onToggle}
+            className="rounded-r-none"
+          >
+            <Star className={cn(starred && "fill-amber-500 text-amber-500")} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{starred ? "Ta bort flaggan (S)" : "Flagga sidan (S)"}</TooltipContent>
+      </Tooltip>
       <Popover open={open} onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>
-          <Button variant="outline" aria-label={`Flaggade sidor: ${count}`} className="tabular-nums">
-            <Star data-icon="inline-start" className={cn(count > 0 && "fill-amber-500 text-amber-500")} />
+          <Button variant="outline" aria-label={`Flaggade sidor: ${count}`} className="-ml-px gap-1 rounded-l-none px-2 tabular-nums">
             {count}
+            <ChevronDown data-icon="inline-end" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          aria-label="Flaggade sidor"
-          onOpenAutoFocus={(e) => {
-            if (!selectOnOpen.current) return;
-            e.preventDefault();
-            selectField();
-          }}
-        >
+        <PopoverContent align="start" aria-label="Flaggade sidor">
           {count === 0 ? (
-            <p className="text-muted-foreground">Inga flaggade sidor. Tryck S eller stjärnan mellan sidorna.</p>
+            <p className="text-muted-foreground">Inga flaggade sidor. Tryck S eller stjärnan.</p>
           ) : (
             <>
               <div className="flex flex-wrap gap-1" role="group" aria-label="Gå till sida">
@@ -627,7 +644,13 @@ function StarsMenu({ stars, text, open, onOpenChange, onJump, onClear, onToast }
                   </Button>
                 ))}
               </div>
-              <Input ref={field} readOnly value={text} aria-label="Flaggade sidor som text" className="h-8" />
+              <div className="flex gap-1">
+                <Input ref={field} readOnly value={text} aria-label="Flaggade sidor som text" className="h-8" />
+                <Button variant="outline" onClick={() => void copy()}>
+                  {copied ? <Check data-icon="inline-start" /> : <Copy data-icon="inline-start" />}
+                  {copied ? "Kopierad!" : "Kopiera"}
+                </Button>
+              </div>
               <Button variant="link" size="sm" className="self-start px-0" onClick={onClear}>
                 Rensa alla
               </Button>
@@ -635,16 +658,12 @@ function StarsMenu({ stars, text, open, onOpenChange, onJump, onClear, onToast }
           )}
         </PopoverContent>
       </Popover>
-      <Button variant="outline" disabled={count === 0} onClick={() => void copy()}>
-        {copied ? <Check data-icon="inline-start" /> : <Copy data-icon="inline-start" />}
-        {copied ? "Kopierad!" : "Kopiera"}
-      </Button>
     </div>
   );
 }
 
 /** Size per page of the compressed file, against a fixed target. */
-function KbPerPage({ file }: { file: PdfFile }) {
+export function KbPerPage({ file }: { file: PdfFile }) {
   if (!file.size) return null;
   const n = file.doc.numPages;
   const kb = file.size / 1024 / n;
@@ -680,12 +699,12 @@ function ToastView({ toast }: { toast: Toast | null }) {
     return () => window.clearTimeout(timer);
   }, [toast]);
   return (
-    <p role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center">
+    <p role="status" aria-live="polite" className="pointer-events-none absolute inset-x-0 bottom-6 z-50 flex justify-center">
       {shown && <Pill>{shown.text}</Pill>}
     </p>
   );
 }
 
-function Pill({ children }: { children: ReactNode }) {
+export function Pill({ children }: { children: ReactNode }) {
   return <span className="rounded-full bg-foreground px-4 py-2 text-sm text-background shadow-lg">{children}</span>;
 }
