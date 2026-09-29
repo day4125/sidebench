@@ -99,12 +99,23 @@ export function PreviewStep({ source, result, onNewFile, onAdjust, onError }: Pr
             onReady={(frame) => setHasHeadings(headingsIn(frame, []).length > 0)}
           />
         </div>
-        <div className="flex flex-wrap justify-center gap-2">
-          <Button variant="outline" disabled={!hasHeadings} onClick={() => stepHeading(-1)}>
+        {/* Same grid as the panes, so the two buttons meet at the gutter between them. */}
+        <div className="grid gap-2 md:grid-cols-2 md:gap-4">
+          <Button
+            variant="outline"
+            className="justify-self-center md:justify-self-end"
+            disabled={!hasHeadings}
+            onClick={() => stepHeading(-1)}
+          >
             <ArrowUp data-icon="inline-start" />
             Föregående rubrik
           </Button>
-          <Button variant="outline" disabled={!hasHeadings} onClick={() => stepHeading(1)}>
+          <Button
+            variant="outline"
+            className="justify-self-center md:justify-self-start"
+            disabled={!hasHeadings}
+            onClick={() => stepHeading(1)}
+          >
             Nästa rubrik
             <ArrowDown data-icon="inline-end" />
           </Button>
@@ -151,7 +162,7 @@ const TOKEN_CLASS: Record<TokenKind, string> = {
   doc: "text-muted-foreground",
 };
 
-function SourceView({ source }: { source: string }) {
+export function SourceView({ source }: { source: string }) {
   const tokens = useMemo(() => highlightHtml(source), [source]);
   return (
     <pre
