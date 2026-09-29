@@ -89,18 +89,22 @@ test("sidebar collapse is saved", async ({ page }) => {
   await expect(page.getByRole("tooltip")).toHaveText(live[0].name);
 });
 
-test("mobile menu opens without CSP violations and locks scrolling", async ({ page }) => {
+test("mobile menu opens and closes below the top strip without CSP violations", async ({ page }) => {
   const problems = watchConsole(page);
   await page.setViewportSize({ width: 390, height: 800 });
   await page.goto("./");
-  await page.getByRole("button", { name: "Visa eller dölj sidopanelen" }).first().click();
-  const menu = page.getByRole("dialog", { name: "Sidopanel" });
-  await expect(menu.getByRole("link", { name: live[0].name })).toBeVisible();
-  // Radix's scroll lock CSS, applied through src/lib/style-singleton.ts.
-  await expect(page.locator("body")).toHaveCSS("overflow", "hidden");
-  await page.keyboard.press("Escape");
-  await expect(menu).toBeHidden();
-  await expect(page.locator("body")).not.toHaveCSS("overflow", "hidden");
+  const strip = page.getByRole("navigation", { name: "Verktyg" });
+  await expect(strip.getByRole("link", { name: live[0].name })).toHaveCount(0);
+
+  await strip.getByRole("button", { name: "Öppna menyn" }).click();
+  const close = strip.getByRole("button", { name: "Stäng menyn" });
+  await expect(close).toHaveAttribute("aria-expanded", "true");
+  await expect(strip.getByRole("link", { name: live[0].name })).toBeVisible();
+  await expect(strip.getByRole("button", { name: /läge$/ })).toBeVisible();
+
+  await close.click();
+  await expect(strip.getByRole("button", { name: "Öppna menyn" })).toHaveAttribute("aria-expanded", "false");
+  await expect(strip.getByRole("link", { name: live[0].name })).toHaveCount(0);
   expect(problems).toEqual([]);
 });
 
@@ -108,7 +112,6 @@ test("stores only UI state: sidebench:site:* keys, no cookies", async ({ page, c
   await page.goto("./");
   await page.getByRole("button", { name: /läge$/ }).click();
   await page.getByRole("button", { name: "Visa eller dölj sidopanelen" }).first().click();
-  await page.keyboard.press("Control+b");
 
   const keys = await storedKeys(page);
   expect(keys.length).toBeGreaterThan(0);

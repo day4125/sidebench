@@ -330,8 +330,11 @@ Notes:
   CSP blocks. `src/lib/style-singleton.ts` replaces that package (Vite
   alias) and applies the same CSS as a constructable stylesheet, which CSP
   doesn't restrict, so `style-src` stays strict. (Step 5 ended up using
-  native selects instead of Radix Select; see there.)
+  native selects instead of Radix Select; see there.) Since the phone menu
+  became an inline strip, nothing in the app locks scrolling, so this
+  shim is currently unused and untested; keep it for a future dialog.
 - **Other edits to shadcn source:** Swedish screen-reader strings; the
+  Ctrl/Cmd+B sidebar shortcut removed (2026-09-29); the
   menu button's tooltip is kept closed while hidden (expanded or mobile),
   since an open-but-hidden tooltip swallowed Escape.
 - **Tokens:** cool neutral surfaces with one teal accent. Light: primary
@@ -339,8 +342,8 @@ Notes:
   `#2dd4bf` with dark text.
 - **Tests:** `tests/e2e/shell.spec.ts` covers nav from the registry, the
   theme (system default, saved choice, applied with the app's scripts
-  blocked), saved collapse and tooltips, the mobile menu (no CSP errors,
-  scroll locked, Escape closes), and storage (only `sidebench:site:*`
+  blocked), saved collapse and tooltips, the mobile strip menu (opens and
+  closes, no CSP errors), and storage (only `sidebench:site:*`
   keys, no cookies).
 
 ### 5. Rebuild the deworder UI

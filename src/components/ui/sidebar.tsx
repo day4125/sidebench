@@ -30,7 +30,6 @@ const SIDEBAR_WIDTH_MOBILE = "18rem"
 // 2.5rem: with the inset variant's padding this leaves the same 16px on
 // both sides of the collapsed icons (window edge and content card).
 const SIDEBAR_WIDTH_ICON = "2.5rem"
-const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
@@ -97,22 +96,6 @@ function SidebarProvider({
   const toggleSidebar = React.useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
   }, [isMobile, setOpen, setOpenMobile])
-
-  // Adds a keyboard shortcut to toggle the sidebar.
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
-        (event.metaKey || event.ctrlKey)
-      ) {
-        event.preventDefault()
-        toggleSidebar()
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [toggleSidebar])
 
   // We add a state so that we can do data-state="expanded" or "collapsed".
   // This makes it easier to style the sidebar with Tailwind classes.

@@ -149,7 +149,7 @@ export function TextApp() {
           onChange={(e) => edit(e.target.value)}
           spellCheck={false}
           placeholder="Klistra in text här..."
-          className="field-sizing-fixed min-h-56 resize-y p-4 md:text-base"
+          className="field-sizing-fixed min-h-56 resize-none p-4 md:text-base"
         />
 
         {action("clean", "Rensa text", {
