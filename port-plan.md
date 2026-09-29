@@ -585,6 +585,38 @@ every tool, and the e2e suite is green.
   - Tests: `tests/e2e/text.spec.ts` covers the toolbar ops, the menu (and
     copying from it) and the legend on hover and focus.
 
+- **Diff checker (2026-09-29).** The first tool built new rather than
+  ported: `diff.html`, `src/tools/diff/`. Built first as a plain split view
+  with a "Visa diff" button, then critiqued and reworked the same day for
+  its real job: checking a text after a round trip through the CMS or
+  Word, where the answer is usually "identical" or a few slips.
+  - **Live:** it compares 150 ms after typing stops, with no button. If a
+    comparison takes over 200 ms, live updates stop, the old result dims,
+    and Ctrl+Enter (or "Jämför") runs it.
+  - **Verdict first:** "Texterna är identiska" (with the number of lines
+    compared) and no table, or "N skillnader" plus rows by kind ("Rader: 5
+    ändrade, 1 tillagd"). Previous/next buttons and Alt+↑/↓ step through
+    the differences ("Skillnad 2 av 4"). The current one scrolls into view,
+    takes focus unless a text field has it, and flashes once.
+  - **Two views:** inline (default; removed text struck through, added
+    marked, like Word's track changes) and side by side. Phones always get
+    inline. The choice isn't saved.
+  - **Folding:** unchanged runs fold to one line of context per side, into
+    a row that opens in place.
+  - **Hidden characters** inside a difference are drawn with Word's
+    symbols (° non-breaking space, ¬ soft hyphen, → tab, a dashed box for
+    zero-width), plus · for spaces in a whitespace-only difference.
+  - **Engine (`engine.ts`)** is its own Myers diff (no dependency): lines
+    first, then each block's lines paired in order and diffed by word.
+    Changes separated only by spaces join into one run out and one in, and
+    a pair with under 40 % in common is shown as a whole line out and in.
+    Past 2000 line edits it gives up and says so; past 400 word edits a
+    pair is marked whole.
+  - Sans (Geist) throughout, like Textmanipulator.
+  - Tests: `tests/unit/diff/engine.test.ts` and `tests/e2e/diff.spec.ts`
+    (live compare, marks, hidden characters, folding, stepping, views,
+    phone width, the slow-text handover).
+
 ### 8. Cut over
 
 - Once the new deworder has parity, delete the legacy engine copy in

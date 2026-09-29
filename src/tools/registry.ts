@@ -66,8 +66,8 @@ export const tools: Tool[] = [
     slug: "diff",
     name: "Diff checker",
     icon: Diff,
-    href: null,
-    status: "soon",
+    href: "diff.html",
+    status: "live",
     tagline: "Jämför två texter sida vid sida",
     desc:
       "Jämför två texter sida vid sida med radvis markering av tillägg, " +

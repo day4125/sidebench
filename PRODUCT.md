@@ -18,7 +18,7 @@ author's own jobs, not a wider audience.
 Small browser tools for the side jobs of content production: cleaning
 Word-exported HTML for CMS import, one-off text operations, and checking two
 PDFs against each other (for example, spotting big faults after
-compression). More tools are planned (SVG viewer, diff checker, color tools,
+compression). More tools are planned (SVG viewer, color tools,
 print PDF calculator; see `src/tools/registry.ts`).
 
 Success is a tool that does its one job quickly and correctly, and material
@@ -49,7 +49,9 @@ the rule every change is checked against.
 - **Live tools:** html-deworder (upload, map Word classes to semantic tags,
   preview, download; must keep parity with the legacy prodtools engine and
   its `config.json` format), Textmanipulator, PDF sida vid sida (two PDFs,
-  one page pair at a time, star pages that differ, KB per page).
+  one page pair at a time, star pages that differ, KB per page), Diff
+  checker (two texts compared live; inline or side-by-side view, folded
+  unchanged runs, hidden characters shown).
 - **Privacy rules (non-negotiable, from `INTENT.md`):** all processing
   local; no network at runtime (no APIs, CDNs, remote fonts, analytics);
   content never written to storage; only UI state persists, under

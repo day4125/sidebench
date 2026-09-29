@@ -11,6 +11,7 @@ CLAUDE.md
 node_modules/
 dist/
 test-results/
+.vitest/
 playwright-report/
 
 # OS and editors
@@ -20,3 +21,6 @@ Thumbs.db
 .idea/
 *.swp
 *~
+
+# Impeccable design critique snapshots (local only)
+.impeccable/
