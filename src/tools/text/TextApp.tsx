@@ -83,9 +83,13 @@ export function TextApp() {
     clearCopied();
   }
 
-  const action = (op: Op, label: string, primary = false) => {
+  // `info`, when given, puts an info icon at the button's right edge (as in
+  // legacy); only the icon opens the tooltip, which drops below the button.
+  // The icon sits over the button rather than in it, since a button can't
+  // hold another focusable element.
+  const action = (op: Op, label: string, { primary = false, info }: { primary?: boolean; info?: ReactNode } = {}) => {
     const copying = op === copyOp;
-    return (
+    const button = (
       <Button
         key={op}
         variant={copying ? "outline" : primary ? "default" : "secondary"}
@@ -93,6 +97,7 @@ export function TextApp() {
         onClick={() => void run(op)}
         className={cn(
           "h-auto min-h-9 w-full min-w-0 shrink py-1.5 whitespace-normal",
+          info && "px-10",
           copying && "border-primary text-primary hover:text-primary",
         )}
       >
@@ -105,6 +110,29 @@ export function TextApp() {
           label
         )}
       </Button>
+    );
+    if (!info) return button;
+    return (
+      <div key={op} className="relative">
+        {button}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label={`Om ${label}`}
+              className={cn(
+                "absolute inset-y-0 right-1 flex w-8 cursor-help items-center justify-center rounded-md opacity-60 outline-none hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3 focus-visible:ring-ring/50",
+                copying ? "text-primary" : primary ? "text-primary-foreground" : "text-secondary-foreground",
+              )}
+            >
+              <Info className="size-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" align="end" sideOffset={6} className="block">
+            {info}
+          </TooltipContent>
+        </Tooltip>
+      </div>
     );
   };
 
@@ -124,16 +152,13 @@ export function TextApp() {
           className="field-sizing-fixed min-h-56 resize-y p-4 md:text-base"
         />
 
-        <WithInfo label="Rensa text" info="Tar bort mjuka bindestreck, onödiga radbrytningar, dubbla mellanrum samt byter raka citattecken till typografiska.">
-          {action("clean", "Rensa text", true)}
-        </WithInfo>
+        {action("clean", "Rensa text", {
+          primary: true,
+          info: "Tar bort mjuka bindestreck, onödiga radbrytningar, dubbla mellanrum samt byter raka citattecken till typografiska.",
+        })}
 
         <div className="grid gap-2 sm:grid-cols-2">
-          {SCRIPTS.map(({ op, label, info }) => (
-            <WithInfo key={op} label={label} info={info}>
-              {action(op, label)}
-            </WithInfo>
-          ))}
+          {SCRIPTS.map(({ op, label, info }) => action(op, label, { info }))}
         </div>
 
         <details className="group rounded-xl border">
@@ -152,24 +177,5 @@ export function TextApp() {
         </p>
       </div>
     </AppShell>
-  );
-}
-
-/** An action button with an info tooltip next to it. */
-function WithInfo({ label, info, children }: { label: string; info: ReactNode; children: ReactNode }) {
-  return (
-    <div className="flex items-center gap-1">
-      {children}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon-lg" aria-label={`Om ${label}`} className="text-muted-foreground">
-            <Info />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="block text-balance">
-          {info}
-        </TooltipContent>
-      </Tooltip>
-    </div>
   );
 }

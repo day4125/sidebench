@@ -304,10 +304,15 @@ work, but is deferred until real tool UIs exist to judge it against (step
 Notes:
 
 - `src/app/AppShell.tsx` frames every page: shadcn Sidebar (`inset`
-  variant, collapses to icons with tooltips, a Sheet under 768 px) and a
-  header with the toggle plus the tool's icon, name and tagline from the
-  registry. `AppSidebar.tsx` lists live tools, then planned ones (disabled)
-  under "Kommer snart", with the theme toggle in the footer. The landing
+  variant, collapses to icons with tooltips) and, on tool pages, a header
+  with the tool's icon, name and tagline from the registry.
+  `AppSidebar.tsx` lists live tools, then planned ones (disabled) under
+  "Kommer snart", with the theme toggle in the footer. As in prodtools, the
+  icons keep their x/y when the sidebar collapses (labels fade but keep
+  their height, the logo row keeps 48 px). The toggle sits beside the logo;
+  collapsed, the logo itself reopens the sidebar. Under 768 px the sidebar
+  is a strip across the top instead (logo plus a menu button that opens
+  the list below it), switched by CSS; shadcn's Sheet is unused. The landing
   page is two card grids from `registry.ts`. Each tool page wraps its
   content in `<AppShell tool="slug">`.
 - **Icons:** `registry.ts` entries carry a lucide icon. The brand mark (a
@@ -570,16 +575,6 @@ every tool, and the e2e suite is green.
 - **Visual direction:** decided in step 7, now that all three tools are
   rebuilt.
 
-- **PDF.js support files loaded on demand.** The bundled standard fonts,
-  CMaps and JPEG 2000/JBIG2 decoders are separate files that load only
-  when a PDF needs one (step 3). The host's request log can therefore show
-  which standard fonts or CJK encodings a PDF uses: nothing of the text,
-  but more than "someone opened the page". It's the same kind of leak as
-  the Geist subsets (step 6), on a bigger scale: the CMaps are a few MB.
-  Options: preload them all with the page, keep only the standard fonts
-  eager, or cache them with the service worker (PWA) so they're fetched
-  once, independently of any document.
-
 - **PWA / offline install:** later, if wanted.
 
 ## Decided
@@ -592,3 +587,8 @@ every tool, and the e2e suite is green.
 - **UI language:** Swedish, as today, no i18n layer (2026-09-28).
 - **Deworder parity:** match current functionality; more real test
   documents deferred (2026-09-28).
+- **PDF.js support files stay on demand** (2026-09-28). The host's log can
+  show which standard fonts or CJK encodings a PDF uses, never its
+  content; not a concern for the viewer's purpose (spotting big faults
+  after compression). Likewise ICC colors without wasm, and the
+  deworder's CSP console warnings: fine as is.

@@ -105,7 +105,11 @@ test("a failed copy selects the text instead", async ({ app, context }) => {
   await expect(button(app, "Kopiera")).toBeVisible();
 });
 
-test("info tooltips open on hover and on keyboard focus", async ({ app }) => {
+test("info tooltips open from the icon on hover and on keyboard focus", async ({ app }) => {
+  // Only the icon opens it, not the button it sits on.
+  await button(app, "Rensa text").hover({ position: { x: 20, y: 10 } });
+  await app.waitForTimeout(300);
+  await expect(app.getByRole("tooltip")).toHaveCount(0);
   await app.getByRole("button", { name: "Om Rensa text" }).hover();
   await expect(app.getByRole("tooltip")).toContainText("mjuka bindestreck");
   // A real pointer sends many moves; Radix needs more than one to see it

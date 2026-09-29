@@ -25,9 +25,11 @@ import {
 } from "@/components/ui/tooltip"
 import { PanelLeftIcon } from "lucide-react"
 
-const SIDEBAR_WIDTH = "16rem"
+const SIDEBAR_WIDTH = "12.5rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
-const SIDEBAR_WIDTH_ICON = "3rem"
+// 2.5rem: with the inset variant's padding this leaves the same 16px on
+// both sides of the collapsed icons (window edge and content card).
+const SIDEBAR_WIDTH_ICON = "2.5rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
 type SidebarContextProps = {
