@@ -1,60 +1,90 @@
-// Textmanipulator: one textarea and a set of one-shot operations. Rebuilt
-// from prodtools' static/text-app.js on the unchanged engine. The text lives
-// in this component's state only (INTENT.md) and leaves only through copy.
+// Textmanipulator: one textarea and a set of one-shot operations, rebuilt
+// from prodtools' static/text-app.js on the engine. The text lives in this
+// component's state only (INTENT.md) and leaves only through copy.
+//
+// Layout: the text box carries a bar of paired icon buttons (super/subscript
+// digits and letters, case, slug) and a menu for the rarely used tools;
+// "Rensa text", the one used most, runs full width below. One legend
+// tooltip explains every button instead of a tooltip per button; only "…"
+// has its own.
 //
 // The copy flow is legacy's: an operation rewrites the text and its button
 // turns into "Kopiera" (one button at a time); clicking it copies the text
 // and shows "Kopierad!" for a moment. Any edit to the text resets every
 // button. If the clipboard fails, the text is selected instead.
-import { useRef, useState, type ReactNode } from "react";
-import { Check, ChevronDown, Copy, Info } from "lucide-react";
+import { useRef, useState, type ComponentType } from "react";
+import { AtSign, CaseLower, CaseUpper, Check, Code, Copy, Ellipsis, Info, Link, Link2, Space } from "lucide-react";
 import { cn } from "cn";
 import { AppShell } from "@/app/AppShell";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useFlash } from "@/hooks/use-flash";
 import { apply, type Op } from "./engine";
+import { SubDigits, SubLetters, SupDigits, SupLetters } from "./icons";
 
-const UNICODE_NOTE = "(OBS! alla bokstäver har inte stöd i unicode)";
+type Icon = ComponentType<{ className?: string }>;
 
-const SCRIPTS: { op: Op; label: string; info: ReactNode }[] = [
-  { op: "supNum", label: "Superscript 0-9", info: "Konvertera alla siffror i textrutan till upphöjda." },
-  { op: "subNum", label: "Subscript 0-9", info: "Konvertera alla siffror i textrutan till nedsänkta." },
+interface OpDef {
+  op: Op;
+  /** Accessible name; the toolbar shows only the icon. */
+  label: string;
+  icon: Icon;
+}
+
+const CLEAN_INFO =
+  "Tar bort mjuka bindestreck, onödiga radbrytningar, dubbla mellanrum samt byter raka citattecken till typografiska.";
+
+// The toolbar, in pairs. `legend` and `note` feed the legend tooltip.
+const GROUPS: { name: string; legend: string; note?: string; ops: [OpDef, OpDef] }[] = [
   {
-    op: "supAlpha",
-    label: "Superscript a-z",
-    info: (
-      <>
-        Konvertera alla bokstäver i textrutan till upphöjda.
-        <br />
-        {UNICODE_NOTE}
-      </>
-    ),
+    name: "Siffror",
+    legend: "Upphöjda / nedsänkta siffror",
+    ops: [
+      { op: "supNum", label: "Upphöjda siffror", icon: SupDigits },
+      { op: "subNum", label: "Nedsänkta siffror", icon: SubDigits },
+    ],
   },
   {
-    op: "subAlpha",
-    label: "Subscript a-z",
-    info: (
-      <>
-        Konvertera alla bokstäver i textrutan till nedsänkta.
-        <br />
-        {UNICODE_NOTE}
-      </>
-    ),
+    name: "Bokstäver",
+    legend: "Upphöjda / nedsänkta bokstäver",
+    note: "Alla bokstäver finns inte i unicode.",
+    ops: [
+      { op: "supAlpha", label: "Upphöjda bokstäver", icon: SupLetters },
+      { op: "subAlpha", label: "Nedsänkta bokstäver", icon: SubLetters },
+    ],
+  },
+  {
+    name: "Skiftläge",
+    legend: "VERSALER / gemener",
+    ops: [
+      { op: "upper", label: "VERSALER", icon: CaseUpper },
+      { op: "lower", label: "gemener", icon: CaseLower },
+    ],
+  },
+  {
+    name: "Slug",
+    legend: "Till / från URL-slug",
+    note: "Per rad: Ny rapport blir ny-rapport, och tillbaka.",
+    ops: [
+      { op: "slug", label: "Till slug", icon: Link2 },
+      { op: "deslug", label: "Från slug", icon: Space },
+    ],
   },
 ];
 
-const MORE: { op: Op; label: string }[] = [
-  { op: "upper", label: "VERSALER" },
-  { op: "lower", label: "gemener" },
-  { op: "extractEmail", label: "Extrahera e-postadresser" },
-  { op: "extractUrl", label: "Extrahera URL" },
+const MORE: OpDef[] = [
+  { op: "stripSvg", label: "Ta bort <svg>-taggar", icon: Code },
+  { op: "extractEmail", label: "Extrahera e-postadresser", icon: AtSign },
+  { op: "extractUrl", label: "Extrahera URL", icon: Link },
 ];
 
-export function TextApp() {
+// ---------------------------------------------------------------------------
+// State: the text and the legacy copy flow.
+
+function useTextOps() {
   const [text, setText] = useState("");
-  // The operation whose button currently offers to copy, if any.
   const [copyOp, setCopyOp] = useState<Op | null>(null);
   const [copied, flashCopied, clearCopied] = useFlash();
   const input = useRef<HTMLTextAreaElement>(null);
@@ -83,99 +113,184 @@ export function TextApp() {
     clearCopied();
   }
 
-  // `info`, when given, puts an info icon at the button's right edge (as in
-  // legacy); only the icon opens the tooltip, which drops below the button.
-  // The icon sits over the button rather than in it, since a button can't
-  // hold another focusable element.
-  const action = (op: Op, label: string, { primary = false, info }: { primary?: boolean; info?: ReactNode } = {}) => {
-    const copying = op === copyOp;
-    const button = (
-      <Button
-        key={op}
-        variant={copying ? "outline" : primary ? "default" : "secondary"}
-        size="lg"
-        onClick={() => void run(op)}
-        className={cn(
-          "h-auto min-h-9 w-full min-w-0 shrink py-1.5 whitespace-normal",
-          info && "px-10",
-          copying && "border-primary text-primary hover:text-primary",
-        )}
-      >
-        {copying ? (
-          <>
-            {copied ? <Check data-icon="inline-start" /> : <Copy data-icon="inline-start" />}
-            {copied ? "Kopierad!" : "Kopiera"}
-          </>
-        ) : (
-          label
-        )}
-      </Button>
-    );
-    if (!info) return button;
-    return (
-      <div key={op} className="relative">
-        {button}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label={`Om ${label}`}
+  return { text, edit, run, copyOp, copied, input };
+}
+
+type Ops = ReturnType<typeof useTextOps>;
+
+/** What a button shows: its own face, or the copy state. */
+function face(ops: Ops, def: OpDef) {
+  const copying = ops.copyOp === def.op;
+  const Icon = copying ? (ops.copied ? Check : Copy) : def.icon;
+  const label = copying ? (ops.copied ? "Kopierad!" : "Kopiera") : def.label;
+  return { copying, Icon, label };
+}
+
+// ---------------------------------------------------------------------------
+// Buttons
+
+/** The lead action, full width. Explained in the toolbar's legend. */
+function CleanButton({ ops }: { ops: Ops }) {
+  const { copying, Icon, label } = face(ops, { op: "clean", label: "Rensa text", icon: Check });
+  return (
+    <Button
+      variant={copying ? "outline" : "default"}
+      onClick={() => void ops.run("clean")}
+      className={cn(
+        "h-11 w-full text-[0.9375rem]",
+        copying && "border-primary bg-background text-primary hover:bg-primary/5 hover:text-primary dark:bg-background",
+      )}
+    >
+      {copying && <Icon data-icon="inline-start" />}
+      {label}
+    </Button>
+  );
+}
+
+/** One square in a joined pair. Named by aria-label only. */
+function Square({ ops, def }: { ops: Ops; def: OpDef }) {
+  const { copying, Icon, label } = face(ops, def);
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={() => void ops.run(def.op)}
+      className={cn(
+        "relative flex h-8 w-[1.875rem] items-center justify-center text-foreground/75 sm:w-9 outline-none transition-colors first:rounded-l-[calc(var(--radius-md)-1px)] last:rounded-r-[calc(var(--radius-md)-1px)] hover:bg-muted hover:text-foreground focus-visible:z-10 focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px",
+        copying && "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary",
+      )}
+    >
+      <Icon className="size-[1.125rem]" />
+    </button>
+  );
+}
+
+/** The raised surface that makes a pair read as buttons. */
+const pairCls = "flex divide-x rounded-md border bg-background shadow-xs dark:bg-secondary";
+
+/** Quiet toolbar button: no surface until hovered. */
+const quietCls =
+  "size-7 text-muted-foreground sm:size-8 hover:bg-background hover:text-foreground aria-expanded:bg-background dark:hover:bg-secondary dark:aria-expanded:bg-secondary";
+
+/** One tooltip for every button: "Rensa text", then each pair's icons and
+ * what they do. "Fler verktyg" has its own. */
+function Legend() {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Om knapparna" className={cn(quietCls, "cursor-help")}>
+          <Info className="size-4" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="top" align="end" sideOffset={8} className="block w-80 max-w-[calc(100vw-2rem)] p-3">
+        <p className="mb-3 border-b pb-2.5">
+          <span className="font-medium">Rensa text</span>
+          <span className="block text-muted-foreground">{CLEAN_INFO}</span>
+        </p>
+        <ul className="grid gap-2.5">
+          {GROUPS.map((g) => (
+            <li key={g.name} className="grid grid-cols-[3.25rem_1fr] items-start gap-x-3">
+              <span className="flex gap-1.5 pt-px">
+                {g.ops.map(({ op, icon: Icon }) => (
+                  <Icon key={op} className="size-[1.125rem]" />
+                ))}
+              </span>
+              <span>
+                <span className="font-medium">{g.legend}</span>
+                {g.note && <span className="block text-muted-foreground">{g.note}</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 border-t pt-2.5 text-muted-foreground">
+          Ett klick ändrar texten. Ett till kopierar den.
+        </p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function MoreMenu({ ops }: { ops: Ops }) {
+  return (
+    <Popover>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Fler verktyg" className={quietCls}>
+              <Ellipsis className="size-4" />
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="top" sideOffset={6}>
+          Fler verktyg
+        </TooltipContent>
+      </Tooltip>
+      <PopoverContent align="end" side="top" className="w-64 gap-0 p-1">
+        {MORE.map((def) => {
+          const { copying, Icon, label } = face(ops, def);
+          return (
+            <Button
+              key={def.op}
+              variant="ghost"
+              onClick={() => void ops.run(def.op)}
               className={cn(
-                "absolute inset-y-0 right-1 flex w-8 cursor-help items-center justify-center rounded-md opacity-60 outline-none hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3 focus-visible:ring-ring/50",
-                copying ? "text-primary" : primary ? "text-primary-foreground" : "text-secondary-foreground",
+                "h-9 w-full justify-start gap-2.5 px-2.5 font-normal",
+                copying ? "text-primary hover:text-primary" : "text-foreground",
               )}
             >
-              <Info className="size-4" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" align="end" sideOffset={6} className="block">
-            {info}
-          </TooltipContent>
-        </Tooltip>
-      </div>
-    );
-  };
+              <Icon className={cn("size-4", !copying && "text-muted-foreground")} />
+              {label}
+            </Button>
+          );
+        })}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
+// ---------------------------------------------------------------------------
+
+export function TextApp() {
+  const ops = useTextOps();
   return (
     <AppShell tool="text">
-      <div className="mx-auto flex max-w-3xl flex-col gap-4">
-        <label htmlFor="text-input" className="sr-only">
-          Text
-        </label>
-        <Textarea
-          id="text-input"
-          ref={input}
-          value={text}
-          onChange={(e) => edit(e.target.value)}
-          spellCheck={false}
-          placeholder="Klistra in text här..."
-          className="field-sizing-fixed min-h-56 resize-none p-4 md:text-base"
-        />
-
-        {action("clean", "Rensa text", {
-          primary: true,
-          info: "Tar bort mjuka bindestreck, onödiga radbrytningar, dubbla mellanrum samt byter raka citattecken till typografiska.",
-        })}
-
-        <div className="grid gap-2 sm:grid-cols-2">
-          {SCRIPTS.map(({ op, label, info }) => action(op, label, { info }))}
-        </div>
-
-        <details className="group rounded-xl border">
-          <summary className="flex cursor-pointer list-none items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium outline-none select-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
-            Fler verktyg
-            <ChevronDown aria-hidden="true" className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
-          </summary>
-          <div className="flex flex-col gap-2 px-4 pt-1 pb-4">
-            {action("stripSvg", "Ta bort <svg>-taggar")}
-            <div className="grid gap-2 sm:grid-cols-2">{MORE.map(({ op, label }) => action(op, label))}</div>
+      <div className="mx-auto flex max-w-3xl flex-col gap-3">
+        <div className="rounded-xl border bg-card shadow-xs focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
+          <label htmlFor="text-input" className="sr-only">
+            Text
+          </label>
+          <Textarea
+            id="text-input"
+            ref={ops.input}
+            value={ops.text}
+            onChange={(e) => ops.edit(e.target.value)}
+            spellCheck={false}
+            placeholder="Klistra in text här..."
+            className="field-sizing-fixed min-h-72 resize-none rounded-none rounded-t-xl border-0 bg-transparent p-4 shadow-none focus-visible:ring-0 md:text-base dark:bg-transparent"
+          />
+          <div
+            role="group"
+            aria-label="Textverktyg"
+            className="flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-b-xl border-t bg-muted/50 px-2 py-2 sm:gap-x-3 sm:px-2.5"
+          >
+            {GROUPS.map((g) => (
+              <div key={g.name} role="group" aria-label={g.name} className={pairCls}>
+                {g.ops.map((def) => (
+                  <Square key={def.op} ops={ops} def={def} />
+                ))}
+              </div>
+            ))}
+            <div className="ml-auto flex sm:gap-0.5">
+              <Legend />
+              <MoreMenu ops={ops} />
+            </div>
           </div>
-        </details>
-
-        <p role="status" className="sr-only">
-          {copied ? "Texten är kopierad till urklipp" : ""}
-        </p>
+        </div>
+        <CleanButton ops={ops} />
       </div>
+      <p role="status" className="sr-only">
+        {ops.copied ? "Texten är kopierad till urklipp" : ""}
+      </p>
     </AppShell>
   );
 }

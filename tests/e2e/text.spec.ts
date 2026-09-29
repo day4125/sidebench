@@ -1,5 +1,5 @@
-// The Textmanipulator UI (port-plan step 6): operations, the copy flow and
-// the info tooltips. Every test also holds the page to INTENT.md: no
+// The Textmanipulator UI: operations, the copy flow, the "Fler verktyg"
+// menu and the legend tooltip. Every test also holds the page to INTENT.md: no
 // request after load, no console errors, no content in storage.
 import { expect, test as base, type Page } from "@playwright/test";
 import { watchConsole, watchNetwork } from "./helpers";
@@ -49,7 +49,7 @@ test("Rensa text cleans the text and turns into a copy button", async ({ app }) 
 
 test("only one button is in copy state at a time", async ({ app }) => {
   await input(app).fill("H2O");
-  await button(app, "Superscript 0-9").click();
+  await button(app, "Upphöjda siffror").click();
   await expect(input(app)).toHaveValue("H²O");
   await button(app, "Kopiera").click();
   await expect(button(app, "Kopierad!")).toBeVisible();
@@ -57,38 +57,56 @@ test("only one button is in copy state at a time", async ({ app }) => {
   // A second operation runs on the result and takes over the copy state,
   // without inheriting the first button's "Kopierad!".
   await button(app, "Rensa text").click();
-  await expect(button(app, "Superscript 0-9")).toBeVisible();
+  await expect(button(app, "Upphöjda siffror")).toBeVisible();
   await expect(app.getByRole("button", { name: /^Kopiera/ })).toHaveCount(1);
   await expect(button(app, "Kopiera")).toBeVisible();
 });
 
 test("editing the text resets every button", async ({ app }) => {
   await input(app).fill("abc");
-  await button(app, "Subscript a-z").click();
+  await button(app, "Nedsänkta bokstäver").click();
   await expect(input(app)).toHaveValue("ₐbc");
   await input(app).press("End");
   await input(app).pressSequentially("x");
   await expect(button(app, "Kopiera")).toHaveCount(0);
-  await expect(button(app, "Subscript a-z")).toBeVisible();
+  await expect(button(app, "Nedsänkta bokstäver")).toBeVisible();
 });
 
-test("the grid and Fler verktyg run each operation", async ({ app }) => {
+test("the toolbar runs each operation", async ({ app }) => {
   const cases: [string, string, string][] = [
-    ["Subscript 0-9", "H2O", "H₂O"],
-    ["Superscript a-z", "abq A", "ᵃᵇq A"],
-    ["Ta bort <svg>-taggar", 'x<svg viewBox="0 0 1 1"><path d="M0 0"/></svg>y', "xy"],
+    ["Nedsänkta siffror", "H2O", "H₂O"],
+    ["Upphöjda bokstäver", "abq A", "ᵃᵇq A"],
     ["VERSALER", "Hej Då", "HEJ DÅ"],
     ["gemener", "Hej Då", "hej då"],
+    ["Till slug", "Ny rapport, del 2\nÅrets bästa", "ny-rapport-del-2\narets-basta"],
+    ["Från slug", "ny-rapport", "Ny rapport"],
+  ];
+  const bar = app.getByRole("group", { name: "Textverktyg" });
+  for (const [name, before, after] of cases) {
+    await input(app).fill(before);
+    await bar.getByRole("button", { name, exact: true }).click();
+    await expect(input(app), name).toHaveValue(after);
+  }
+});
+
+test("Fler verktyg is a menu of the rarely used operations", async ({ app }) => {
+  const cases: [string, string, string][] = [
+    ["Ta bort <svg>-taggar", 'x<svg viewBox="0 0 1 1"><path d="M0 0"/></svg>y', "xy"],
     ["Extrahera e-postadresser", "Mejla a@b.com eller c.d@e-f.io tack", "a@b.com\nc.d@e-f.io"],
     ["Extrahera URL", "se https://x.com/a och www.y.se/b", "https://x.com/a\nhttp://www.y.se/b"],
   ];
-  await expect(button(app, "VERSALER")).toBeHidden();
-  await app.getByText("Fler verktyg").click();
   for (const [name, before, after] of cases) {
+    await expect(button(app, name)).toHaveCount(0);
     await input(app).fill(before);
+    await button(app, "Fler verktyg").click();
     await button(app, name).click();
     await expect(input(app), name).toHaveValue(after);
+    // The copy flow works inside the menu too.
+    await button(app, "Kopiera").click();
+    expect(await clipboard(app)).toBe(after);
+    await app.keyboard.press("Escape");
   }
+  await expect(button(app, "Extrahera URL")).toHaveCount(0);
 });
 
 test("a failed copy selects the text instead", async ({ app, context }) => {
@@ -105,21 +123,29 @@ test("a failed copy selects the text instead", async ({ app, context }) => {
   await expect(button(app, "Kopiera")).toBeVisible();
 });
 
-test("info tooltips open from the icon on hover and on keyboard focus", async ({ app }) => {
-  // Only the icon opens it, not the button it sits on.
-  await button(app, "Rensa text").hover({ position: { x: 20, y: 10 } });
+test("one legend tooltip explains every button, on hover and on keyboard focus", async ({ app }) => {
+  // The buttons themselves have no tooltips.
+  await button(app, "Upphöjda siffror").hover();
   await app.waitForTimeout(300);
   await expect(app.getByRole("tooltip")).toHaveCount(0);
-  await app.getByRole("button", { name: "Om Rensa text" }).hover();
-  await expect(app.getByRole("tooltip")).toContainText("mjuka bindestreck");
+
+  await button(app, "Om knapparna").hover();
+  const tip = app.getByRole("tooltip");
+  await expect(tip).toContainText("mjuka bindestreck");
+  await expect(tip).toContainText("Alla bokstäver finns inte i unicode");
+  await expect(tip).toContainText("Ny rapport blir ny-rapport");
   // A real pointer sends many moves; Radix needs more than one to see it
   // leave the trigger's grace area.
   const box = (await app.getByRole("heading", { name: "Textmanipulator" }).boundingBox())!;
   await app.mouse.move(box.x, box.y, { steps: 10 });
-  await expect(app.getByRole("tooltip")).toHaveCount(0);
+  await expect(tip).toHaveCount(0);
 
-  await app.getByRole("button", { name: "Om Superscript a-z" }).focus();
-  await expect(app.getByRole("tooltip")).toContainText("OBS! alla bokstäver har inte stöd i unicode");
+  await button(app, "Om knapparna").focus();
+  await expect(tip).toContainText("Upphöjda / nedsänkta siffror");
   await app.keyboard.press("Escape");
-  await expect(app.getByRole("tooltip")).toHaveCount(0);
+  await expect(tip).toHaveCount(0);
+
+  // "Fler verktyg" isn't in the legend and has its own.
+  await button(app, "Fler verktyg").hover();
+  await expect(tip).toHaveText("Fler verktyg");
 });

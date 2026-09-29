@@ -1,6 +1,6 @@
 /* text engine — pure text-transform logic for the Textmanipulator tool.
    Ported from prodtools' static/text.js; the only changes are ES exports
-   and types. No DOM, no storage, no network: every function takes a string
+   and types, plus slugify/deslugify (new in sidebench). No DOM, no storage, no network: every function takes a string
    and returns a string. */
 
 const superscriptDigits: Record<string, string> = {
@@ -69,6 +69,39 @@ export function extract(type: string, text: string): string {
   return text;
 }
 
+// Letters NFKD doesn't split into a base letter plus a mark.
+const FOLD: Record<string, string> = { æ: "ae", ø: "o", ß: "ss", ł: "l", đ: "d", þ: "th" };
+
+// URL slug per line: "Ny rapport, del 2" -> "ny-rapport-del-2". Lowercase,
+// accents dropped (å/ä/ö -> a/a/o), any other run of characters -> "-".
+export function slugify(text: string): string {
+  return text
+    .split("\n")
+    .map(function (line) {
+      return line
+        .toLowerCase()
+        .replace(/[æøßłđþ]/g, function (ch) { return FOLD[ch]; })
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    })
+    .join("\n");
+}
+
+// Back from a slug per line: "ny-rapport" -> "Ny rapport". Hyphens and
+// underscores become spaces, the first letter is capitalized. Accents
+// dropped by slugify can't come back.
+export function deslugify(text: string): string {
+  return text
+    .split("\n")
+    .map(function (line) {
+      var words = line.replace(/[-_]+/g, " ").replace(/ {2,}/g, " ").trim();
+      return words.charAt(0).toUpperCase() + words.slice(1);
+    })
+    .join("\n");
+}
+
 export const OPS = {
   clean: clean,
   upper: function (t: string) { return t.toUpperCase(); },
@@ -80,6 +113,8 @@ export const OPS = {
   stripSvg: stripSvg,
   extractEmail: function (t: string) { return extract("email", t); },
   extractUrl: function (t: string) { return extract("url", t); },
+  slug: slugify,
+  deslug: deslugify,
 };
 
 export type Op = keyof typeof OPS;

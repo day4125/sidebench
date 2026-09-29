@@ -564,6 +564,27 @@ every tool, and the e2e suite is green.
     test now checks one row, two canvases, and that a left page's canvas is
     emptied. The local 244/264-page pair still renders every page, clean.
 
+- **Textmanipulator toolbar (2026-09-29).** The button grid and its info
+  icons are replaced by a bar along the bottom of the text box, worked out
+  on a throwaway prototype page. "Rensa text", the one used most, runs full
+  width below the box.
+  - The bar holds four joined pairs of icon buttons: super/subscript
+    digits, super/subscript letters, VERSALER/gemener, and to/from slug.
+    The letter icons are drawn on lucide's grid (`src/tools/text/icons.tsx`,
+    x with a small "a"), so they read apart from lucide's digit ones.
+  - No labels and no tooltip per button: one legend tooltip (ⓘ, "Om
+    knapparna") explains "Rensa text" and every pair. "…" ("Fler verktyg",
+    with its own tooltip) is a Radix Popover holding the rare ones: remove
+    `<svg>`, extract e-mail, extract URL. The copy flow is unchanged and
+    works inside the menu too.
+  - Button names changed: "Superscript 0-9" is now "Upphöjda siffror",
+    and so on.
+  - **New operations:** `slugify` and `deslugify` in `engine.ts` (the first
+    additions beyond the legacy port), line by line, with unit tests.
+    Slugs drop accents (å/ä/ö → a/a/o), so they don't come back.
+  - Tests: `tests/e2e/text.spec.ts` covers the toolbar ops, the menu (and
+    copying from it) and the legend on hover and focus.
+
 ### 8. Cut over
 
 - Once the new deworder has parity, delete the legacy engine copy in

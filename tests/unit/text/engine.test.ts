@@ -61,3 +61,26 @@ test("apply coerces nullish input to an empty string", () => {
   expect(apply("upper", null)).toBe("");
   expect(apply("clean", undefined)).toBe("");
 });
+
+// New in sidebench, not in the legacy suite.
+
+test("slugify lowercases, drops accents and joins words with hyphens", () => {
+  expect(apply("slug", "Ny rapport, del 2")).toBe("ny-rapport-del-2");
+  expect(apply("slug", "Årets bästa – öl & mat!")).toBe("arets-basta-ol-mat");
+  expect(apply("slug", "Smørrebrød på Straße")).toBe("smorrebrod-pa-strasse");
+  expect(apply("slug", "  --Hej--  ")).toBe("hej");
+});
+
+test("slugify works line by line", () => {
+  expect(apply("slug", "Första rubriken\nAndra rubriken\n\nTredje")).toBe("forsta-rubriken\nandra-rubriken\n\ntredje");
+});
+
+test("deslugify turns hyphens and underscores into spaces, first letter up", () => {
+  expect(apply("deslug", "ny-rapport")).toBe("Ny rapport");
+  expect(apply("deslug", "ny_rapport--del-2")).toBe("Ny rapport del 2");
+  expect(apply("deslug", "-hej-\nnasta-rad")).toBe("Hej\nNasta rad");
+});
+
+test("deslugify undoes slugify for plain lowercase-safe text", () => {
+  expect(apply("deslug", apply("slug", "Ny rapport"))).toBe("Ny rapport");
+});
