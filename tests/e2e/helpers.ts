@@ -37,3 +37,27 @@ export function watchConsole(page: Page) {
   page.on("worker", (worker) => worker.on("console", onMessage));
   return problems;
 }
+
+/**
+ * Everything the page has stored that isn't UI state (INTENT.md): keys in
+ * localStorage or sessionStorage outside sidebench:site:*, any IndexedDB
+ * database, any Cache Storage cache, any cookie. Empty when all is well.
+ */
+export async function storedOutsideUi(page: Page): Promise<string[]> {
+  const found = await page.evaluate(async () => {
+    const out: string[] = [];
+    for (const [name, store] of [
+      ["localStorage", localStorage],
+      ["sessionStorage", sessionStorage],
+    ] as const) {
+      for (const key of Object.keys(store)) {
+        if (!key.startsWith("sidebench:site:")) out.push(`${name}: ${key}`);
+      }
+    }
+    for (const db of await indexedDB.databases()) out.push(`IndexedDB: ${db.name}`);
+    for (const cache of await caches.keys()) out.push(`Cache Storage: ${cache}`);
+    return out;
+  });
+  const cookies = await page.context().cookies();
+  return [...found, ...cookies.map((c) => `cookie: ${c.name}`)];
+}

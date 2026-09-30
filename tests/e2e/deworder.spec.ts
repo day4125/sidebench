@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { expect, test as base, type Download, type Page } from "@playwright/test";
 import { DEFAULT_CONFIG } from "../../src/tools/deworder/engine/defaults";
-import { watchConsole, watchNetwork } from "./helpers";
+import { storedOutsideUi, watchConsole, watchNetwork } from "./helpers";
 
 const fixtures = "tests/unit/deworder/fixtures";
 const fixture = readFileSync(`${fixtures}/verify-fixture.html`, "utf8");
@@ -73,8 +73,7 @@ const test = base.extend<{ app: Page }>({
     expect(offending).toEqual([]);
     expect(requests).toEqual([]);
     expect(errors.filter((e) => !isAllowed(e))).toEqual([]);
-    expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => !k.startsWith("sidebench:site:")))).toEqual([]);
-    expect(await context.cookies()).toEqual([]);
+    expect(await storedOutsideUi(page)).toEqual([]);
   },
 });
 

@@ -2,7 +2,7 @@
 // Every test also holds the page to INTENT.md: no request after load, no
 // console errors, nothing stored outside sidebench:site:*.
 import { expect, test as base, type Locator, type Page } from "@playwright/test";
-import { watchConsole, watchNetwork } from "./helpers";
+import { storedOutsideUi, watchConsole, watchNetwork } from "./helpers";
 
 const test = base.extend<{ app: Page }>({
   app: async ({ page, context, baseURL }, use) => {
@@ -16,10 +16,7 @@ const test = base.extend<{ app: Page }>({
 
     expect(offending).toEqual([]);
     expect(errors).toEqual([]);
-    for (const store of ["localStorage", "sessionStorage"] as const) {
-      const keys = await page.evaluate((s) => Object.keys(window[s]), store);
-      expect(keys.filter((k) => !k.startsWith("sidebench:site:"))).toEqual([]);
-    }
+    expect(await storedOutsideUi(page)).toEqual([]);
   },
 });
 

@@ -1,10 +1,10 @@
 // The diff checker UI. Every test also holds the page to INTENT.md: no
 // request after load, no console errors, no content in storage.
 import { expect, test as base, type Page } from "@playwright/test";
-import { watchConsole, watchNetwork } from "./helpers";
+import { storedOutsideUi, watchConsole, watchNetwork } from "./helpers";
 
 const test = base.extend<{ app: Page }>({
-  app: async ({ page, context, baseURL }, use) => {
+  app: async ({ page, baseURL }, use) => {
     const origin = new URL(baseURL!).origin;
     const offending = watchNetwork(page, origin);
     const errors = watchConsole(page);
@@ -21,8 +21,7 @@ const test = base.extend<{ app: Page }>({
     expect(offending).toEqual([]);
     expect(requests).toEqual([]);
     expect(errors).toEqual([]);
-    expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => !k.startsWith("sidebench:site:")))).toEqual([]);
-    expect(await context.cookies()).toEqual([]);
+    expect(await storedOutsideUi(page)).toEqual([]);
   },
 });
 

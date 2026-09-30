@@ -2,7 +2,7 @@
 // origin, and every page ships the CSP that blocks outgoing connections.
 import { readdirSync } from "node:fs";
 import { expect, test } from "@playwright/test";
-import { watchConsole, watchNetwork } from "./helpers";
+import { storedOutsideUi, watchConsole, watchNetwork } from "./helpers";
 
 // The page entries at the repo root, which the build turns into dist/*.html.
 const pages = readdirSync(".").filter((f) => f.endsWith(".html"));
@@ -25,6 +25,7 @@ for (const file of pages) {
 
       expect(offending).toEqual([]);
       expect(errors).toEqual([]);
+      expect(await storedOutsideUi(page)).toEqual([]);
     });
 
     test("ships a CSP that refuses connections", async ({ page }) => {
@@ -45,3 +46,31 @@ for (const file of pages) {
     });
   });
 }
+
+// The check every tool's tests end with has to see all of it, or it passes
+// by missing things.
+test("the storage check finds content in every kind of storage", async ({ page, context }) => {
+  await page.goto("text.html");
+  await page.evaluate(async () => {
+    localStorage.setItem("sidebench:site:theme", "dark");
+    localStorage.setItem("draft", "x");
+    sessionStorage.setItem("pasted", "x");
+    await new Promise((done) => {
+      const open = indexedDB.open("stash");
+      open.onsuccess = () => {
+        open.result.close();
+        done(null);
+      };
+    });
+    await caches.open("pages");
+  });
+  await context.addCookies([{ name: "seen", value: "x", url: page.url() }]);
+
+  expect((await storedOutsideUi(page)).sort()).toEqual([
+    "Cache Storage: pages",
+    "IndexedDB: stash",
+    "cookie: seen",
+    "localStorage: draft",
+    "sessionStorage: pasted",
+  ]);
+});
