@@ -137,6 +137,13 @@ export function nbspNumbers(text: string): string {
   });
 }
 
+// Every character the hidden-character marks show, gone: non-breaking and
+// narrow non-breaking spaces and tabs become plain spaces; soft hyphens and
+// zero-width characters are deleted. Line breaks stay.
+export function stripHidden(text: string): string {
+  return text.replace(/[\u00A0\u202F\t]/g, " ").replace(/[\u00AD\u200B-\u200D\u2060\uFEFF]/g, "");
+}
+
 // Swedish abbreviations that end in a dot without ending the sentence.
 const ABBREV = /(?:^|[\s(])(?:t\.ex|bl\.a|d\.v\.s|dvs|s\.k|m\.fl|m\.m|p\.g\.a|pga|ca|kl|nr|resp|jfr|fr\.o\.m|t\.o\.m|o\.s\.v|osv|e\.d|f\.d|dr|st|tel)\.$/i;
 
@@ -271,6 +278,7 @@ export const OPS = {
   deslug: deslugify,
   softClean: softClean,
   nbspNumbers: nbspNumbers,
+  stripHidden: stripHidden,
   sentence: sentenceCase,
   dedupe: dedupeLines,
   bullets: function (t: string) { return listLines("bullet", t); },

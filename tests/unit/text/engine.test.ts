@@ -154,3 +154,7 @@ test("decodeEntities handles names, decimal and hex, and leaves unknowns", () =>
   expect(apply("decodeEntities", "R&auml;k &amp; sm&#246;r &#xE5;&nbsp;x &okänd; &#0;")).toBe("Räk & smör å\u00A0x &okänd; &#0;");
   expect(apply("decodeEntities", "&amp;lt;")).toBe("&lt;");
 });
+
+test("stripHidden makes hidden spaces plain and deletes zero-width characters", () => {
+  expect(apply("stripHidden", "rä\u00ADk\u200Bsmör\uFEFFgås\n10\u00A0000\u202Fkr\tx")).toBe("räksmörgås\n10 000 kr x");
+});

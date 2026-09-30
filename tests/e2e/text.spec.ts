@@ -77,6 +77,7 @@ test("the toolbar runs each operation", async ({ app }) => {
     ["Upphöjda bokstäver", "abq A", "ᵃᵇq A"],
     ["VERSALER", "Hej Då", "HEJ DÅ"],
     ["gemener", "Hej Då", "hej då"],
+    ["Som i en mening", "NY RAPPORT. MER TEXT", "Ny rapport. Mer text"],
     ["Till slug", "Ny rapport, del 2\nÅrets bästa", "ny-rapport-del-2\narets-basta"],
     ["Från slug", "ny-rapport", "Ny rapport"],
   ];
@@ -94,7 +95,7 @@ test("Fler verktyg is a menu of the rarely used operations", async ({ app }) => 
     ["Extrahera e-postadresser", "Mejla a@b.com eller c.d@e-f.io tack", "a@b.com\nc.d@e-f.io"],
     ["Extrahera URL", "se https://x.com/a och www.y.se/b", "https://x.com/a\nhttp://www.y.se/b"],
     ["Rensa text, behåll stycken", "ett\ntvå\n\ntre", "ett två\n\ntre"],
-    ["Som i en mening", "NY RAPPORT. MER TEXT", "Ny rapport. Mer text"],
+    ["Ta bort dolda tecken", "rä\u00ADk 10\u00A0000\tkr", "räk 10 000 kr"],
     ["Hårt mellanslag i tal (10 000)", "10 000 kr", "10\u00A0000 kr"],
     ["Punktlista", "a\nb", "• a\n• b"],
     ["Numrerad lista", "a\nb", "1. a\n2. b"],

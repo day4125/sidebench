@@ -2,7 +2,7 @@
 // from prodtools' static/text-app.js on the engine. The text lives in this
 // component's state only (INTENT.md) and leaves only through copy.
 //
-// Layout: the text box carries a bar of paired icon buttons (super/subscript
+// Layout: the text box carries a bar of joined icon buttons (super/subscript
 // digits and letters, case, slug), a character count, a toggle that draws
 // hidden characters in the text and a menu for the rarely used tools;
 // "Rensa text", the one used most, runs full width below. One legend
@@ -30,6 +30,7 @@ import {
   CodeXml,
   Copy,
   Ellipsis,
+  Eraser,
   Info,
   Link,
   Link2,
@@ -65,8 +66,8 @@ interface OpDef {
 const CLEAN_INFO =
   "Tar bort mjuka bindestreck, onödiga radbrytningar, dubbla mellanrum samt byter raka citattecken till typografiska.";
 
-// The toolbar, in pairs. `legend` and `note` feed the legend tooltip.
-const GROUPS: { name: string; legend: string; note?: string; ops: [OpDef, OpDef] }[] = [
+// The toolbar, in joined groups. `legend` and `note` feed the legend tooltip.
+const GROUPS: { name: string; legend: string; note?: string; ops: OpDef[] }[] = [
   {
     name: "Siffror",
     legend: "Upphöjda / nedsänkta siffror",
@@ -86,10 +87,12 @@ const GROUPS: { name: string; legend: string; note?: string; ops: [OpDef, OpDef]
   },
   {
     name: "Skiftläge",
-    legend: "VERSALER / gemener",
+    legend: "VERSALER / gemener / Som i en mening",
+    note: "Stor bokstav först i varje mening. Namn blir gemena.",
     ops: [
       { op: "upper", label: "VERSALER", icon: CaseUpper },
       { op: "lower", label: "gemener", icon: CaseLower },
+      { op: "sentence", label: "Som i en mening", icon: CaseSensitive },
     ],
   },
   {
@@ -108,7 +111,7 @@ const MORE: { name: string; ops: OpDef[] }[] = [
     name: "Text",
     ops: [
       { op: "softClean", label: "Rensa text, behåll stycken", icon: WrapText },
-      { op: "sentence", label: "Som i en mening", icon: CaseSensitive },
+      { op: "stripHidden", label: "Ta bort dolda tecken", icon: Eraser },
       { op: "nbspNumbers", label: "Hårt mellanslag i tal (10 000)", icon: WholeWord },
     ],
   },
@@ -246,7 +249,7 @@ export function CleanButton({ ops }: { ops: Ops }) {
   );
 }
 
-/** One square in a joined pair. Named by aria-label only. */
+/** One square in a joined group. Named by aria-label only. */
 function Square({ ops, def }: { ops: Ops; def: OpDef }) {
   const { copying, Icon, label } = face(ops, def);
   return (
@@ -264,7 +267,7 @@ function Square({ ops, def }: { ops: Ops; def: OpDef }) {
   );
 }
 
-/** The raised surface that makes a pair read as buttons. */
+/** The raised surface that makes a group read as buttons. */
 const pairCls = "flex divide-x rounded-md border bg-background shadow-xs dark:bg-secondary";
 
 /** Quiet toolbar button: no surface until hovered. */
@@ -281,14 +284,14 @@ function Legend() {
           <Info className="size-4" />
         </Button>
       </TooltipTrigger>
-      <TooltipContent side="top" align="end" sideOffset={8} className="block w-80 max-w-[calc(100vw-2rem)] p-3">
+      <TooltipContent side="top" align="end" sideOffset={8} className="block w-88 max-w-[calc(100vw-2rem)] p-3">
         <p className="mb-3 border-b pb-2.5">
           <span className="font-medium">Rensa text</span>
           <span className="block text-muted-foreground">{CLEAN_INFO}</span>
         </p>
         <ul className="grid gap-2.5">
           {GROUPS.map((g) => (
-            <li key={g.name} className="grid grid-cols-[3.25rem_1fr] items-start gap-x-3">
+            <li key={g.name} className="grid grid-cols-[4.5rem_1fr] items-start gap-x-3">
               <span className="flex gap-1.5 pt-px">
                 {g.ops.map(({ op, icon: Icon }) => (
                   <Icon key={op} className="size-[1.125rem]" />
