@@ -646,6 +646,15 @@ every tool, and the e2e suite is green.
   INTENT.md says content isn't written to storage, so this needs either a
   written exception there (per tab, never localStorage) or memory only.
 
+- **Textmanipulator UX revisit** (noted 2026-10-01). The tool outgrew its
+  toolbar design: 9 toolbar buttons plus count, ¶ toggle, legend and "…";
+  11 items in "Fler verktyg"; the legend covers only the toolbar; the bar
+  wraps to two rows at phone width.
+  - **"Rensa text" turbo mode:** a setting on the lead button that also
+    removes hidden characters (what "Ta bort dolda tecken" does), since in
+    practice they're rarely wanted in cleaned text. How to present it (a
+    toggle, a split button, a second mode) is part of the revisit.
+
 ## Decided
 
 - **Special characters became a tool of its own** (2026-09-30), not a menu
