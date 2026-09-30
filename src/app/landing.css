@@ -1,4 +1,4 @@
-/* Landing prototype B's motion. A file rather than inline <style>, for the CSP. */
+/* The start page's motion. A file rather than inline <style>, for the CSP. */
 
 @keyframes fan-draw {
   from { stroke-dashoffset: 1; }
@@ -8,6 +8,11 @@
 @keyframes fan-in {
   from { opacity: 0; scale: 0.92; filter: blur(4px); }
   to { opacity: 1; scale: 1; filter: blur(0); }
+}
+
+@keyframes fan-echo {
+  from { opacity: 0; scale: 0.94; }
+  to { opacity: 1; scale: 1; }
 }
 
 @keyframes fan-drift {
@@ -37,6 +42,45 @@
   animation: fan-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* The starry sky and its twinkles show in dark mode only. */
+.fan-stars {
+  display: none;
+}
+
+.dark .fan-stars {
+  display: inline;
+}
+
+/* The echoes' and stars' field fades out towards its edges, so nothing in it ends on a
+   hard clip. */
+.fan-field {
+  mask-image: radial-gradient(ellipse 55% 70% at 50% 30%, #000 55%, transparent 100%);
+}
+
+/* A background layer (an echo or a star layer) grows in from the fan's centre on
+   load, so the sky ripples outwards. When a card is lit it leans towards
+   it: a slow ease-out, set off a beat after the spoke's fill so the field
+   seems to follow the teal out. */
+.fan-layer {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: fan-echo 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: translate 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.08s;
+}
+
+/* The stars' teal glow around the lit card fades in with the lean and
+   out when the card is left. */
+.fan-dots-glow {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  opacity: 0;
+  transition: translate 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.08s, opacity 0.5s;
+}
+
+.fan-dots-glow.is-lit {
+  opacity: 0.6;
+}
+
 /* A lit spoke fills with teal from the bowl out to the card, then drains
    back towards the bowl, quicker, when the card is left. The dot on the
    bowl lights as the fill sets off. */
@@ -55,8 +99,14 @@
   .fan-reveal,
   .fan-arc,
   .fan-spoke,
-  .fan-card {
+  .fan-card,
+  .fan-layer {
     animation: none;
+  }
+  .fan-layer,
+  .fan-dots-glow {
+    translate: none !important;
+    transition: none;
   }
   .fan-fill,
   .fan-fill.is-lit {

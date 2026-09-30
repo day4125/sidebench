@@ -313,7 +313,9 @@ Notes:
   collapsed, the logo itself reopens the sidebar. Under 768 px the sidebar
   is a strip across the top instead (logo plus a menu button that opens
   the list below it), switched by CSS; shadcn's Sheet is unused. The landing
-  page is two card grids from `registry.ts`. Each tool page wraps its
+  page was two card grids from `registry.ts`; since 2026-09-30 it's the fan
+  from `landing-prototype.md` ("Solfjädern", `src/app/landing.tsx`), still
+  built from the registry. Each tool page wraps its
   content in `<AppShell tool="slug">`.
 - **Icons:** `registry.ts` entries carry a lucide icon. The brand mark (a
   workbench, `src/app/BrandMark.tsx`, and `public/favicon.svg`) is drawn on

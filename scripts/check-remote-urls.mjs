@@ -13,6 +13,7 @@ const ALLOWED = [
   /^http:\/\/example\.com$/, // dummy base for URL parsing
   /^https:\/\/foo\.bar$/, // dummy base for URL parsing
   /^http:\/\/\$\{e\}$/, // prefix added to a PDF's "www." link text
+  /^https:\/\/github\.com\/day4125\/sidebench$/, // the start page's link to the repo, opened only by a click
 ];
 
 const files = readdirSync("dist", { recursive: true })
