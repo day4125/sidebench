@@ -5,7 +5,7 @@
 
 const PREFIX = "sidebench:site:";
 
-export type SiteSetting = "theme" | "sidebar";
+export type SiteSetting = "theme" | "sidebar" | "text:hidden";
 
 export function readSetting(key: SiteSetting): string | null {
   try {

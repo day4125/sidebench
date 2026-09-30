@@ -21,6 +21,7 @@ import { cn } from "cn";
 import { AppShell } from "@/app/AppShell";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { HIDDEN, HIDDEN_SPLIT } from "@/lib/hidden-chars";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { NumberedTextarea } from "./NumberedTextarea";
 import { diff, type Cell, type DiffResult, type Row, type Seg } from "./engine";
@@ -659,24 +660,11 @@ export function Mark({ kind, text }: { kind: "delete" | "insert"; text: string }
   );
 }
 
-// Word's symbols for hidden characters, where it has one.
-const HIDDEN: Record<string, { glyph: string; name: string }> = {
-  " ": { glyph: "°", name: "hårt mellanslag" },
-  " ": { glyph: "°", name: "smalt hårt mellanslag" },
-  "\t": { glyph: "→", name: "tabb" },
-  "­": { glyph: "¬", name: "mjukt bindestreck" },
-  "​": { glyph: "", name: "nollbrett mellanslag" },
-  "‌": { glyph: "", name: "nollbredd icke-sammanfogare" },
-  "‍": { glyph: "", name: "nollbredd sammanfogare" },
-  "⁠": { glyph: "", name: "ordsammanfogare" },
-  "﻿": { glyph: "", name: "BOM" },
-};
 const SPACE = { glyph: "·", name: "mellanslag" };
-const HIDDEN_RE = /([  \t­​-‍⁠﻿ ])/;
 
 /** Text with its hidden characters drawn. Plain spaces only when `spaces`. */
 function Visible({ text, spaces }: { text: string; spaces: boolean }) {
-  return text.split(HIDDEN_RE).map((piece, i) => {
+  return text.split(HIDDEN_SPLIT).map((piece, i) => {
     const hidden = piece === " " ? (spaces ? SPACE : null) : HIDDEN[piece];
     if (!hidden) return piece;
     return (

@@ -112,7 +112,7 @@ export function deslugify(text: string): string {
 export function softClean(text: string): string {
   return text
     .replace(/&shy;/gi, "")
-    .replace(/[­​-‍⁠﻿]/g, "")
+    .replace(/[\u00AD\u200B-\u200D\u2060\uFEFF]/g, "")
     .replace(/"/g, "”")
     .replace(/\r\n?/g, "\n")
     .replace(/(\p{L})-[ \t]*\n[ \t]*(och|eller|samt|till)\b/gu, "$1- $2")
@@ -132,8 +132,8 @@ export function softClean(text: string): string {
 // (a year, then a number) is left alone. Two numbers in a row that happen
 // to fit the pattern ("klass 5 100 elever") can't be told apart.
 export function nbspNumbers(text: string): string {
-  return text.replace(/(?<![\d.,])\d{1,3}(?:[   ]\d{3})+(?![\d])/g, function (num) {
-    return num.replace(/[   ]/g, " ");
+  return text.replace(/(?<![\d.,])\d{1,3}(?:[ \u2009\u202F]\d{3})+(?![\d])/g, function (num) {
+    return num.replace(/[ \u2009\u202F]/g, "\u00A0");
   });
 }
 
@@ -234,13 +234,13 @@ export function stripTags(text: string): string {
 // The entities that turn up in CMS and Word HTML. Unknown names stay as
 // they are. Numeric references (&#229; &#xE5;) all work.
 const ENTITIES: Record<string, string> = {
-  amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", shy: "­",
+  amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: "\u00A0", shy: "\u00AD",
   ndash: "–", mdash: "—", hellip: "…", laquo: "«", raquo: "»",
   lsquo: "‘", rsquo: "’", ldquo: "“", rdquo: "”", bdquo: "„", sbquo: "‚",
   bull: "•", middot: "·", deg: "°", times: "×", divide: "÷", plusmn: "±",
   copy: "©", reg: "®", trade: "™", sect: "§", para: "¶", euro: "€", pound: "£",
   sup1: "¹", sup2: "²", sup3: "³", frac12: "½", frac14: "¼", frac34: "¾",
-  thinsp: " ", ensp: " ", emsp: " ", zwsp: "​", zwj: "‍", zwnj: "‌",
+  thinsp: "\u2009", ensp: "\u2002", emsp: "\u2003", zwsp: "\u200B", zwj: "\u200D", zwnj: "\u200C",
   aring: "å", auml: "ä", ouml: "ö", Aring: "Å", Auml: "Ä", Ouml: "Ö",
   eacute: "é", Eacute: "É", egrave: "è", uuml: "ü", Uuml: "Ü", aelig: "æ", AElig: "Æ",
   oslash: "ø", Oslash: "Ø", szlig: "ß", ccedil: "ç", ntilde: "ñ", aacute: "á", oacute: "ó", iacute: "í",

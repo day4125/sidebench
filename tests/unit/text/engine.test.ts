@@ -4,7 +4,7 @@ import { expect, test } from "vitest";
 import { apply, clean, extract, stripSvg } from "@/tools/text/engine";
 
 test("clean strips soft hyphens, normalizes quotes, collapses whitespace", () => {
-  expect(clean('  rä&shy;ksmör­gås   med   "citat"  ')).toBe("räksmörgås med ”citat”");
+  expect(clean('  rä&shy;ksmör\u00ADgås   med   "citat"  ')).toBe("räksmörgås med ”citat”");
 });
 
 test("clean trims and collapses newlines/tabs to single spaces", () => {
@@ -100,18 +100,18 @@ test("softClean joins words split at a line end, not before och", () => {
 });
 
 test("softClean drops soft hyphens and zero-width characters, keeps nbsp", () => {
-  expect(apply("softClean", 'rä&shy;k­smör​gås 10 000 "x"')).toBe("räksmörgås 10 000 ”x”");
+  expect(apply("softClean", 'rä&shy;k\u00ADsmör\u200Bgås 10\u00A0000 "x"')).toBe("räksmörgås 10\u00A0000 ”x”");
 });
 
 test("nbspNumbers joins thousands groups with non-breaking spaces", () => {
-  expect(apply("nbspNumbers", "10 000 kr och 1 250 000 invånare")).toBe("10 000 kr och 1 250 000 invånare");
-  expect(apply("nbspNumbers", "12 345")).toBe("12 345");
+  expect(apply("nbspNumbers", "10 000 kr och 1 250 000 invånare")).toBe("10\u00A0000 kr och 1\u00A0250\u00A0000 invånare");
+  expect(apply("nbspNumbers", "12\u2009345")).toBe("12\u00A0345");
 });
 
 test("nbspNumbers leaves years, short groups and decimals alone", () => {
   expect(apply("nbspNumbers", "år 2023 100 personer")).toBe("år 2023 100 personer");
   expect(apply("nbspNumbers", "sidan 12 34 och 5 6789")).toBe("sidan 12 34 och 5 6789");
-  expect(apply("nbspNumbers", "10 000,50 kr")).toBe("10 000,50 kr");
+  expect(apply("nbspNumbers", "10 000,50 kr")).toBe("10\u00A0000,50 kr");
 });
 
 test("sentenceCase lowers a shouting line and capitalizes sentence starts", () => {
@@ -151,6 +151,6 @@ test("stripTags keeps text and line breaks, drops script, style and comments", (
 });
 
 test("decodeEntities handles names, decimal and hex, and leaves unknowns", () => {
-  expect(apply("decodeEntities", "R&auml;k &amp; sm&#246;r &#xE5;&nbsp;x &okänd; &#0;")).toBe("Räk & smör å x &okänd; &#0;");
+  expect(apply("decodeEntities", "R&auml;k &amp; sm&#246;r &#xE5;&nbsp;x &okänd; &#0;")).toBe("Räk & smör å\u00A0x &okänd; &#0;");
   expect(apply("decodeEntities", "&amp;lt;")).toBe("&lt;");
 });

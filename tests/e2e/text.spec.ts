@@ -192,3 +192,38 @@ test("the toolbar counts characters, words and lines, or the selection", async (
   await input(app).press("Shift+ArrowLeft");
   await expect(bar).toContainText("Markerat: 6 tecken · 2 ord · 1 rad");
 });
+
+test("hidden characters are drawn in a layer that matches the text box", async ({ app }) => {
+  const toggle = button(app, "Visa dolda tecken");
+  const layer = app.locator("[data-marks]");
+  const long = "Ett långt stycke med 10\u00A0000 kr och rä\u00ADk\u200Bsmörgås. ".repeat(40);
+  await input(app).fill(`${long}\n\ttabb\n${long}`);
+  await expect(layer).toHaveCount(0);
+
+  // The tooltip tallies what's there.
+  await toggle.hover();
+  await expect(app.getByRole("tooltip")).toContainText("80 hårda mellanslag");
+  await expect(app.getByRole("tooltip")).toContainText("1 tabb");
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  await expect(layer).toHaveAttribute("aria-hidden", "true");
+  // Same text, same wrapping: the layer is exactly as tall as the text box's content.
+  const heights = async () =>
+    [await layer.evaluate((el) => el.scrollHeight), await input(app).evaluate((el) => el.scrollHeight)];
+  const [layerH, boxH] = await heights();
+  expect(Math.abs(layerH - boxH)).toBeLessThanOrEqual(1);
+  // And it follows the text box's scroll.
+  await input(app).evaluate((el) => (el.scrollTop = 300));
+  await expect.poll(() => layer.evaluate((el) => el.scrollTop)).toBe(300);
+
+  // Editing still works with the layer on. The setting is kept as UI state
+  // (a reload would trip this fixture's no-requests check).
+  await input(app).fill("a\u00A0b");
+  await expect(layer).toContainText("°");
+  const setting = () => app.evaluate(() => localStorage.getItem("sidebench:site:text:hidden"));
+  expect(await setting()).toBe("1");
+  await toggle.click();
+  await expect(layer).toHaveCount(0);
+  expect(await setting()).toBe("0");
+});

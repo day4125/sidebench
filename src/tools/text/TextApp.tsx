@@ -3,8 +3,8 @@
 // component's state only (INTENT.md) and leaves only through copy.
 //
 // Layout: the text box carries a bar of paired icon buttons (super/subscript
-// digits and letters, case, slug), a character count and a menu for the
-// rarely used tools;
+// digits and letters, case, slug), a character count, a toggle that draws
+// hidden characters in the text and a menu for the rarely used tools;
 // "Rensa text", the one used most, runs full width below. One legend
 // tooltip explains every button instead of a tooltip per button; only "…"
 // has its own.
@@ -18,7 +18,7 @@
 // text. Either way it goes in through the browser's own editing
 // (execCommand insertText), so Ctrl+Z undoes it like typing. Copy always
 // takes the whole text.
-import { useRef, useState, type ComponentType } from "react";
+import { Fragment, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type RefObject } from "react";
 import {
   Ampersand,
   AtSign,
@@ -39,6 +39,7 @@ import {
   Pilcrow,
   Space,
   WholeWord,
+  WrapText,
 } from "lucide-react";
 import { cn } from "cn";
 import { AppShell } from "@/app/AppShell";
@@ -47,6 +48,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useFlash } from "@/hooks/use-flash";
+import { HIDDEN, tallyHidden } from "@/lib/hidden-chars";
+import { readSetting, writeSetting } from "@/lib/storage";
 import { apply, type Op } from "./engine";
 import { SubDigits, SubLetters, SupDigits, SupLetters } from "./icons";
 
@@ -104,7 +107,7 @@ const MORE: { name: string; ops: OpDef[] }[] = [
   {
     name: "Text",
     ops: [
-      { op: "softClean", label: "Rensa text, behåll stycken", icon: Pilcrow },
+      { op: "softClean", label: "Rensa text, behåll stycken", icon: WrapText },
       { op: "sentence", label: "Som i en mening", icon: CaseSensitive },
       { op: "nbspNumbers", label: "Hårt mellanslag i tal (10 000)", icon: WholeWord },
     ],
@@ -198,11 +201,18 @@ export function useTextOps() {
     clearCopied();
   }
 
+  // Drawing hidden characters is a UI setting, so it's remembered.
+  const [marks, setMarks] = useState(() => readSetting("text:hidden") === "1");
+  function toggleMarks() {
+    setMarks(!marks);
+    writeSetting("text:hidden", marks ? "0" : "1");
+  }
+
   function select(el: HTMLTextAreaElement) {
     setSel([el.selectionStart, el.selectionEnd]);
   }
 
-  return { text, edit, run, copyOp, copied, input, sel, select };
+  return { text, edit, run, copyOp, copied, input, sel, select, marks, toggleMarks };
 }
 
 type Ops = ReturnType<typeof useTextOps>;
@@ -374,6 +384,117 @@ function MoreMenu({ ops }: { ops: Ops }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Hidden characters
+
+/** Toolbar toggle. Its tooltip tallies what the text holds; a dot on the
+ * button says there is something to see while it's off. */
+function MarksToggle({ ops }: { ops: Ops }) {
+  const tally = useMemo(() => tallyHidden(ops.text), [ops.text]);
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Visa dolda tecken"
+          aria-pressed={ops.marks}
+          onClick={ops.toggleMarks}
+          className={cn(
+            quietCls,
+            "relative",
+            ops.marks && "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary dark:hover:bg-primary/15",
+          )}
+        >
+          <Pilcrow className="size-4" />
+          {!ops.marks && tally.length > 0 && (
+            <span aria-hidden="true" className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />
+          )}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="top" align="end" sideOffset={6} className="block max-w-72">
+        <span className="font-medium">{ops.marks ? "Dölj dolda tecken" : "Visa dolda tecken"}</span>
+        {(tally.length ? tally : [ops.text ? "Inga i texten" : "Hårda mellanslag, mjuka bindestreck, tabbar"]).map((line) => (
+          <span key={line} className="block text-muted-foreground">
+            {line}
+          </span>
+        ))}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+// The same text as the text box, laid out identically behind it (same
+// padding, font, wrapping and scrollbar gutter) but invisible, with a mark
+// drawn where each hidden character sits. Marks are absolutely positioned,
+// so they never move the text; the text box stays the real editor on top,
+// transparent. "¶" marks each line break.
+const MARKED = /([\u00A0\u202F\t\u00AD\u200B-\u200D\u2060\uFEFF\n])/;
+
+/** A hidden character, wrapped so its mark centers on it. The wrapper is
+ * an inline span, so the layout stays the text box's. Zero-width
+ * characters get their mark above the gap, where it can't cover a letter. */
+function Marked({ ch }: { ch: string }) {
+  const { glyph } = HIDDEN[ch];
+  const center = "absolute left-1/2 -translate-x-1/2";
+  let mark;
+  if (ch === "\u00AD") {
+    mark = <span className={cn(center, "-top-[0.55em] text-[0.75em] text-primary")}>{glyph}</span>;
+  } else if (glyph) {
+    mark = <span className={cn(center, "top-0 text-primary")}>{glyph}</span>;
+  } else {
+    mark = (
+      <span className={cn(center, "top-[0.25em] h-[1em] w-[0.3em] rounded-[1px] border border-dashed border-primary")} />
+    );
+  }
+  return (
+    <span className="relative">
+      {ch}
+      {mark}
+    </span>
+  );
+}
+
+/** "¶" at the end of a line, from an empty anchor before the break. */
+function LineEnd() {
+  return (
+    <span className="relative">
+      <span className="absolute top-0 left-0.5 text-muted-foreground/50">¶</span>
+    </span>
+  );
+}
+
+function Marks({ text, input }: { text: string; input: RefObject<HTMLTextAreaElement | null> }) {
+  const layer = useRef<HTMLDivElement>(null);
+  // Follow the text box's scroll, also after an edit changes its height.
+  useLayoutEffect(() => {
+    if (layer.current && input.current) layer.current.scrollTop = input.current.scrollTop;
+  });
+  return (
+    <div
+      ref={layer}
+      data-marks=""
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 overflow-hidden p-4 text-base break-words whitespace-pre-wrap text-transparent select-none [scrollbar-gutter:stable]"
+    >
+      {text.split(MARKED).map((piece, i) =>
+        piece === "\n" ? (
+          <Fragment key={i}>
+            <LineEnd />
+            {piece}
+          </Fragment>
+        ) : HIDDEN[piece] ? (
+          <Marked key={i} ch={piece} />
+        ) : (
+          piece
+        ),
+      )}
+      {/* A trailing line break needs a line after it, as in the text box. */}
+      {" "}
+    </div>
+  );
+}
+
 /** The text field with the toolbar of operations along its bottom edge. */
 export function TextBox({ ops }: { ops: Ops }) {
   return (
@@ -381,16 +502,26 @@ export function TextBox({ ops }: { ops: Ops }) {
       <label htmlFor="text-input" className="sr-only">
         Text
       </label>
-      <Textarea
-        id="text-input"
-        ref={ops.input}
-        value={ops.text}
-        onChange={(e) => ops.edit(e.target.value)}
-        onSelect={(e) => ops.select(e.currentTarget)}
-        spellCheck={false}
-        placeholder="Klistra in text här..."
-        className="field-sizing-fixed min-h-72 resize-none rounded-none rounded-t-xl border-0 bg-transparent p-4 shadow-none focus-visible:ring-0 md:text-base dark:bg-transparent"
-      />
+      <div className="relative">
+        {ops.marks && <Marks text={ops.text} input={ops.input} />}
+        <Textarea
+          id="text-input"
+          ref={ops.input}
+          value={ops.text}
+          onChange={(e) => ops.edit(e.target.value)}
+          onSelect={(e) => ops.select(e.currentTarget)}
+          onScroll={(e) => {
+            const layer = e.currentTarget.parentElement?.querySelector<HTMLElement>("[data-marks]");
+            if (layer) layer.scrollTop = e.currentTarget.scrollTop;
+          }}
+          spellCheck={false}
+          placeholder="Klistra in text här..."
+          className={cn(
+            "relative field-sizing-fixed min-h-72 resize-none rounded-none rounded-t-xl border-0 bg-transparent p-4 shadow-none focus-visible:ring-0 md:text-base dark:bg-transparent",
+            ops.marks && "[scrollbar-gutter:stable]",
+          )}
+        />
+      </div>
       <div
         role="group"
         aria-label="Textverktyg"
@@ -405,6 +536,7 @@ export function TextBox({ ops }: { ops: Ops }) {
         ))}
         <div className="ml-auto flex sm:gap-0.5">
           <Count ops={ops} />
+          <MarksToggle ops={ops} />
           <Legend />
           <MoreMenu ops={ops} />
         </div>
