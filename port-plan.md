@@ -654,6 +654,20 @@ every tool, and the e2e suite is green.
     removes hidden characters (what "Ta bort dolda tecken" does), since in
     practice they're rarely wanted in cleaned text. How to present it (a
     toggle, a split button, a second mode) is part of the revisit.
+  - **Legend for the hidden-character marks:** what `°`, `→`, `¬`, the
+    dashed box and `¶` stand for. Today only the ¶ toggle's tooltip counts
+    them by name; nothing ties a mark in the text to its meaning.
+
+- **Copy review, every page** (noted 2026-10-01). Part of any UX pass:
+  all user-facing text, not just layout. Method: one `.md` per page (start
+  page and each tool) listing every string it can show, grouped by where
+  it appears: headings, button and menu labels, placeholders, tooltips and
+  legends, aria-labels and screen-reader status lines, empty states, error
+  and conditional messages (with the condition that shows each one). The
+  user edits the `.md` files directly; Claude then maps the edits back into
+  the source and tests. Each string in the `.md` needs a pointer to where
+  it lives (file, and the label or key it belongs to) so the mapping back
+  is unambiguous.
 
 ## Decided
 
