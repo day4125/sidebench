@@ -22,3 +22,25 @@ export function writeSetting(key: SiteSetting, value: string) {
     // Not persisted; the page still works.
   }
 }
+
+// Per-tab state: sessionStorage outlives a reload or a trip to another tool
+// in the same tab and is gone when the tab closes. Same rule as above: UI
+// state only.
+
+export type SessionSetting = "chars:recent";
+
+export function readSession(key: SessionSetting): string | null {
+  try {
+    return sessionStorage.getItem(PREFIX + key);
+  } catch {
+    return null;
+  }
+}
+
+export function writeSession(key: SessionSetting, value: string) {
+  try {
+    sessionStorage.setItem(PREFIX + key, value);
+  } catch {
+    // Not kept; the page still works.
+  }
+}

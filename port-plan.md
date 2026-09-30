@@ -637,14 +637,21 @@ every tool, and the e2e suite is green.
 
 ## Ideas
 
-- **Textmanipulator: special-character picker** (noted 2026-09-29). A
-  small menu with a search field for the uncommon Unicode characters
-  otherwise looked up on Google (dashes, non-breaking and thin spaces,
-  arrows, ×, ±, °, ‰, § and the like): type to filter by name, click or
-  Enter to insert at the cursor or copy. Search by Swedish and English
-  names. Came out of the launcher sketch for the landing page.
+- **Clipboard** (noted 2026-09-30). A tool for snippets copied over and
+  over while working on a project: save a snippet, copy it back with one
+  click. Kept in sessionStorage like Specialtecken's recent characters, so
+  it survives a reload or a trip to another tool and is gone when the tab
+  closes. Will take the "Koden är öppen" card's place on the start page.
+  Open question before building: snippets are the user's own text, and
+  INTENT.md says content isn't written to storage, so this needs either a
+  written exception there (per tab, never localStorage) or memory only.
 
 ## Decided
+
+- **Special characters became a tool of its own** (2026-09-30), not a menu
+  in Textmanipulator: Specialtecken (`chars.html`), copying rather than
+  inserting at the cursor. It took the place of the planned PDF-kalkylator,
+  which was dropped.
 
 - **PDF library:** `pdfjs-dist` directly; WebAssembly off, CSP unchanged
   (2026-09-28).

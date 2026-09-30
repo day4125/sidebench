@@ -3,8 +3,8 @@
 import {
   BookOpen,
   BrushCleaning,
-  Calculator,
   Diff,
+  Omega,
   Palette,
   PenTool,
   Type,
@@ -63,6 +63,17 @@ export const tools: Tool[] = [
       "ta bort <svg>-taggar och plocka ut e-postadresser eller URL:er.",
   },
   {
+    slug: "chars",
+    name: "Specialtecken",
+    icon: Omega,
+    href: "chars.html",
+    status: "live",
+    tagline: "Sök och kopiera tecken som tangentbordet saknar",
+    desc:
+      "Sök bland typografiska, matematiska och andra specialtecken på " +
+      "svenska eller engelska. Kopiera tecknet eller dess HTML-entitet.",
+  },
+  {
     slug: "diff",
     name: "Diff checker",
     icon: Diff,
@@ -95,17 +106,6 @@ export const tools: Tool[] = [
     desc:
       "Palettextraktion, kontrastkontroll (WCAG), formatkonvertering " +
       "mellan hex, rgb, hsl och oklch.",
-  },
-  {
-    slug: "pdf",
-    name: "PDF-kalkylator",
-    icon: Calculator,
-    href: null,
-    status: "soon",
-    tagline: "Sidantal, filstorlek och utfallszoner",
-    desc:
-      "Beräkna sidantal, filstorlek och utfallszoner för trycksaker " +
-      "direkt i webbläsaren.",
   },
 ];
 
