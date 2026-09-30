@@ -93,6 +93,14 @@ test("Fler verktyg is a menu of the rarely used operations", async ({ app }) => 
     ["Ta bort <svg>-taggar", 'x<svg viewBox="0 0 1 1"><path d="M0 0"/></svg>y', "xy"],
     ["Extrahera e-postadresser", "Mejla a@b.com eller c.d@e-f.io tack", "a@b.com\nc.d@e-f.io"],
     ["Extrahera URL", "se https://x.com/a och www.y.se/b", "https://x.com/a\nhttp://www.y.se/b"],
+    ["Rensa text, behåll stycken", "ett\ntvå\n\ntre", "ett två\n\ntre"],
+    ["Som i en mening", "NY RAPPORT. MER TEXT", "Ny rapport. Mer text"],
+    ["Hårt mellanslag i tal (10 000)", "10 000 kr", "10\u00A0000 kr"],
+    ["Punktlista", "a\nb", "• a\n• b"],
+    ["Numrerad lista", "a\nb", "1. a\n2. b"],
+    ["Ta bort dubbletter", "a\nb\na", "a\nb"],
+    ["Ta bort HTML-taggar", "<p>Hej <b>du</b></p>", "Hej du"],
+    ["Avkoda entiteter (&amp;)", "R&auml;k &amp; sm&#246;r", "Räk & smör"],
   ];
   for (const [name, before, after] of cases) {
     await expect(button(app, name)).toHaveCount(0);
@@ -147,4 +155,40 @@ test("one legend tooltip explains every button, on hover and on keyboard focus",
   // "Fler verktyg" isn't in the legend and has its own.
   await button(app, "Fler verktyg").hover();
   await expect(tip).toHaveText("Fler verktyg");
+});
+
+/** Select characters `from`..`to` in the text box. */
+const selectRange = (page: Page, from: number, to: number) =>
+  input(page).evaluate((el: HTMLTextAreaElement, [a, b]) => el.setSelectionRange(a, b), [from, to]);
+
+test("an operation on a selection changes only the selection", async ({ app }) => {
+  await input(app).fill("Utsläppen 2023 var 40 ton CO2");
+  await selectRange(app, 26, 29);
+  await button(app, "Nedsänkta siffror").click();
+  await expect(input(app)).toHaveValue("Utsläppen 2023 var 40 ton CO₂");
+  // The changed part stays selected, and the copy button copies all of it.
+  const selected = await input(app).evaluate((el: HTMLTextAreaElement) => el.value.slice(el.selectionStart, el.selectionEnd));
+  expect(selected).toBe("CO₂");
+  await button(app, "Kopiera").click();
+  expect(await clipboard(app)).toBe("Utsläppen 2023 var 40 ton CO₂");
+});
+
+test("Ctrl+Z undoes an operation", async ({ app }) => {
+  await input(app).fill("Hej Då");
+  await button(app, "VERSALER").click();
+  await expect(input(app)).toHaveValue("HEJ DÅ");
+  await input(app).press("ControlOrMeta+z");
+  await expect(input(app)).toHaveValue("Hej Då");
+  // Undo is an edit, so the buttons reset.
+  await expect(button(app, "VERSALER")).toBeVisible();
+});
+
+test("the toolbar counts characters, words and lines, or the selection", async ({ app }) => {
+  const bar = app.getByRole("group", { name: "Textverktyg" });
+  await expect(bar).not.toContainText("tecken");
+  await input(app).fill("Två ord\noch en rad till");
+  await expect(bar).toContainText("23 tecken · 6 ord · 2 rader");
+  await selectRange(app, 0, 7);
+  await input(app).press("Shift+ArrowLeft");
+  await expect(bar).toContainText("Markerat: 6 tecken · 2 ord · 1 rad");
 });

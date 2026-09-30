@@ -1,7 +1,8 @@
 /* text engine — pure text-transform logic for the Textmanipulator tool.
    Ported from prodtools' static/text.js; the only changes are ES exports
-   and types, plus slugify/deslugify (new in sidebench). No DOM, no storage, no network: every function takes a string
-   and returns a string. */
+   and types, plus everything from slugify down (new in sidebench). No DOM,
+   no storage, no network: every function takes a string and returns a
+   string. */
 
 const superscriptDigits: Record<string, string> = {
   "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
@@ -102,6 +103,159 @@ export function deslugify(text: string): string {
     .join("\n");
 }
 
+// Prototype of a gentler "Rensa text" that keeps paragraphs. A blank line
+// ends a paragraph; single line breaks inside one become spaces. Words split
+// at a line end ("kom-\nmunen") are joined, except before och/eller/samt/till
+// ("barn-\noch" stays "barn- och"); before a capital the hyphen stays
+// ("EU-\nKommissionen" -> "EU-Kommissionen"). Soft hyphens and zero-width
+// characters go, non-breaking spaces stay. Quotes as in clean().
+export function softClean(text: string): string {
+  return text
+    .replace(/&shy;/gi, "")
+    .replace(/[­​-‍⁠﻿]/g, "")
+    .replace(/"/g, "”")
+    .replace(/\r\n?/g, "\n")
+    .replace(/(\p{L})-[ \t]*\n[ \t]*(och|eller|samt|till)\b/gu, "$1- $2")
+    .replace(/(\p{Ll})-[ \t]*\n[ \t]*(\p{Ll})/gu, "$1$2")
+    .replace(/(\p{L})-[ \t]*\n[ \t]*(\p{Lu})/gu, "$1-$2")
+    .split(/\n[ \t]*\n\s*/)
+    .map(function (para) {
+      return para.replace(/[ \t\n]+/g, " ").trim();
+    })
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+// Non-breaking spaces inside numbers written with space-separated
+// thousands: "10 000" and "1 250 000" keep together across a line break.
+// Only a space followed by exactly three digits counts, so "2023 100"
+// (a year, then a number) is left alone. Two numbers in a row that happen
+// to fit the pattern ("klass 5 100 elever") can't be told apart.
+export function nbspNumbers(text: string): string {
+  return text.replace(/(?<![\d.,])\d{1,3}(?:[   ]\d{3})+(?![\d])/g, function (num) {
+    return num.replace(/[   ]/g, " ");
+  });
+}
+
+// Swedish abbreviations that end in a dot without ending the sentence.
+const ABBREV = /(?:^|[\s(])(?:t\.ex|bl\.a|d\.v\.s|dvs|s\.k|m\.fl|m\.m|p\.g\.a|pga|ca|kl|nr|resp|jfr|fr\.o\.m|t\.o\.m|o\.s\.v|osv|e\.d|f\.d|dr|st|tel)\.$/i;
+
+// "Som i en mening": the first letter of each sentence up, the rest down.
+// A line written mostly in capitals is lowercased wholesale; otherwise only
+// Capitalized words are lowered, so acronyms (EU, SVT) and mixed case
+// (iPhone) survive. Names can't be told from ordinary words and end up
+// lowercase. A sentence starts at the beginning of a line or after . ! ?
+// unless the dot ends an abbreviation (t.ex., bl.a.).
+export function sentenceCase(text: string): string {
+  return text
+    .split("\n")
+    .map(function (line) {
+      var letters = line.replace(/[^\p{L}]/gu, "");
+      var caps = letters.replace(/[^\p{Lu}]/gu, "").length;
+      var shouting = letters.length > 0 && caps / letters.length > 0.6;
+      var lowered = shouting
+        ? line.toLowerCase()
+        : line.replace(/\p{L}+/gu, function (word) {
+            return /^\p{Lu}\p{Ll}*$/u.test(word) ? word.toLowerCase() : word;
+          });
+      var start = true;
+      var out = "";
+      for (var i = 0; i < lowered.length; i++) {
+        var ch = lowered[i];
+        if (start && /\p{L}/u.test(ch)) {
+          out += ch.toUpperCase();
+          start = false;
+          continue;
+        }
+        if (start && /\d/.test(ch)) start = false;
+        out += ch;
+        if (/[.!?]/.test(ch) && /\s/.test(lowered[i + 1] || "") && !(ch === "." && ABBREV.test(out))) {
+          start = true;
+        }
+      }
+      return out;
+    })
+    .join("\n");
+}
+
+// Remove repeated lines, keeping the first. Lines compare after trimming;
+// empty lines are all kept.
+export function dedupeLines(text: string): string {
+  var seen = new Set<string>();
+  return text
+    .split("\n")
+    .filter(function (line) {
+      var key = line.trim();
+      if (!key) return true;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .join("\n");
+}
+
+const MARKER = /^(\s*)(?:[•\-*–·▪◦]|\d+[.)])\s+/;
+
+// Bullets or numbers on every non-empty line. If every line already has
+// this kind, they come off instead; any other markers are replaced.
+export function listLines(kind: "bullet" | "number", text: string): string {
+  var lines = text.split("\n");
+  var filled = lines.filter(function (l) { return l.trim(); });
+  var mine = kind === "bullet" ? /^\s*•\s/ : /^\s*\d+[.)]\s/;
+  var toggleOff = filled.length > 0 && filled.every(function (l) { return mine.test(l); });
+  var n = 0;
+  return lines
+    .map(function (line) {
+      if (!line.trim()) return line;
+      var bare = line.replace(MARKER, "$1");
+      if (toggleOff) return bare;
+      var indent = bare.match(/^\s*/)![0];
+      return indent + (kind === "bullet" ? "• " : ++n + ". ") + bare.slice(indent.length);
+    })
+    .join("\n");
+}
+
+const BLOCK_END = /<\/(?:p|div|li|h[1-6]|tr|blockquote|pre|ul|ol|table|section|article)\s*>|<br\s*\/?>/gi;
+
+// Plain text out of HTML: comments, script and style go with their content,
+// block ends and <br> become line breaks, every other tag is dropped.
+// Entities are left for decodeEntities.
+export function stripTags(text: string): string {
+  return text
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "")
+    .replace(BLOCK_END, "\n")
+    .replace(/<\/?[a-zA-Z][^>]*>/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+// The entities that turn up in CMS and Word HTML. Unknown names stay as
+// they are. Numeric references (&#229; &#xE5;) all work.
+const ENTITIES: Record<string, string> = {
+  amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", shy: "­",
+  ndash: "–", mdash: "—", hellip: "…", laquo: "«", raquo: "»",
+  lsquo: "‘", rsquo: "’", ldquo: "“", rdquo: "”", bdquo: "„", sbquo: "‚",
+  bull: "•", middot: "·", deg: "°", times: "×", divide: "÷", plusmn: "±",
+  copy: "©", reg: "®", trade: "™", sect: "§", para: "¶", euro: "€", pound: "£",
+  sup1: "¹", sup2: "²", sup3: "³", frac12: "½", frac14: "¼", frac34: "¾",
+  thinsp: " ", ensp: " ", emsp: " ", zwsp: "​", zwj: "‍", zwnj: "‌",
+  aring: "å", auml: "ä", ouml: "ö", Aring: "Å", Auml: "Ä", Ouml: "Ö",
+  eacute: "é", Eacute: "É", egrave: "è", uuml: "ü", Uuml: "Ü", aelig: "æ", AElig: "Æ",
+  oslash: "ø", Oslash: "Ø", szlig: "ß", ccedil: "ç", ntilde: "ñ", aacute: "á", oacute: "ó", iacute: "í",
+};
+
+export function decodeEntities(text: string): string {
+  return text.replace(/&(#\d+|#[xX][0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);/g, function (whole, name) {
+    if (name[0] === "#") {
+      var code = name[1] === "x" || name[1] === "X" ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10);
+      return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : whole;
+    }
+    return ENTITIES[name] !== undefined ? ENTITIES[name] : whole;
+  });
+}
+
 export const OPS = {
   clean: clean,
   upper: function (t: string) { return t.toUpperCase(); },
@@ -115,6 +269,14 @@ export const OPS = {
   extractUrl: function (t: string) { return extract("url", t); },
   slug: slugify,
   deslug: deslugify,
+  softClean: softClean,
+  nbspNumbers: nbspNumbers,
+  sentence: sentenceCase,
+  dedupe: dedupeLines,
+  bullets: function (t: string) { return listLines("bullet", t); },
+  numbers: function (t: string) { return listLines("number", t); },
+  stripTags: stripTags,
+  decodeEntities: decodeEntities,
 };
 
 export type Op = keyof typeof OPS;

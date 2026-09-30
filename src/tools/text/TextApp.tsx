@@ -3,7 +3,8 @@
 // component's state only (INTENT.md) and leaves only through copy.
 //
 // Layout: the text box carries a bar of paired icon buttons (super/subscript
-// digits and letters, case, slug) and a menu for the rarely used tools;
+// digits and letters, case, slug), a character count and a menu for the
+// rarely used tools;
 // "Rensa text", the one used most, runs full width below. One legend
 // tooltip explains every button instead of a tooltip per button; only "…"
 // has its own.
@@ -12,8 +13,33 @@
 // turns into "Kopiera" (one button at a time); clicking it copies the text
 // and shows "Kopierad!" for a moment. Any edit to the text resets every
 // button. If the clipboard fails, the text is selected instead.
+//
+// An operation works on the selection if there is one, else on the whole
+// text. Either way it goes in through the browser's own editing
+// (execCommand insertText), so Ctrl+Z undoes it like typing. Copy always
+// takes the whole text.
 import { useRef, useState, type ComponentType } from "react";
-import { AtSign, CaseLower, CaseUpper, Check, Code, Copy, Ellipsis, Info, Link, Link2, Space } from "lucide-react";
+import {
+  Ampersand,
+  AtSign,
+  CaseLower,
+  CaseSensitive,
+  CaseUpper,
+  Check,
+  Code,
+  CodeXml,
+  Copy,
+  Ellipsis,
+  Info,
+  Link,
+  Link2,
+  List,
+  ListOrdered,
+  ListX,
+  Pilcrow,
+  Space,
+  WholeWord,
+} from "lucide-react";
 import { cn } from "cn";
 import { AppShell } from "@/app/AppShell";
 import { Button } from "@/components/ui/button";
@@ -74,10 +100,38 @@ const GROUPS: { name: string; legend: string; note?: string; ops: [OpDef, OpDef]
   },
 ];
 
-const MORE: OpDef[] = [
-  { op: "stripSvg", label: "Ta bort <svg>-taggar", icon: Code },
-  { op: "extractEmail", label: "Extrahera e-postadresser", icon: AtSign },
-  { op: "extractUrl", label: "Extrahera URL", icon: Link },
+const MORE: { name: string; ops: OpDef[] }[] = [
+  {
+    name: "Text",
+    ops: [
+      { op: "softClean", label: "Rensa text, behåll stycken", icon: Pilcrow },
+      { op: "sentence", label: "Som i en mening", icon: CaseSensitive },
+      { op: "nbspNumbers", label: "Hårt mellanslag i tal (10 000)", icon: WholeWord },
+    ],
+  },
+  {
+    name: "Rader",
+    ops: [
+      { op: "bullets", label: "Punktlista", icon: List },
+      { op: "numbers", label: "Numrerad lista", icon: ListOrdered },
+      { op: "dedupe", label: "Ta bort dubbletter", icon: ListX },
+    ],
+  },
+  {
+    name: "HTML",
+    ops: [
+      { op: "stripTags", label: "Ta bort HTML-taggar", icon: CodeXml },
+      { op: "decodeEntities", label: "Avkoda entiteter (&amp;)", icon: Ampersand },
+      { op: "stripSvg", label: "Ta bort <svg>-taggar", icon: Code },
+    ],
+  },
+  {
+    name: "Extrahera",
+    ops: [
+      { op: "extractEmail", label: "Extrahera e-postadresser", icon: AtSign },
+      { op: "extractUrl", label: "Extrahera URL", icon: Link },
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -87,11 +141,41 @@ export function useTextOps() {
   const [text, setText] = useState("");
   const [copyOp, setCopyOp] = useState<Op | null>(null);
   const [copied, flashCopied, clearCopied] = useFlash();
+  // The selection, for the count; [0, 0] when there is none.
+  const [sel, setSel] = useState<[number, number]>([0, 0]);
   const input = useRef<HTMLTextAreaElement>(null);
+  // Set while an operation writes, so edit() doesn't reset the copy state.
+  const applying = useRef(false);
+
+  /** Rewrite the selection, or the whole text, as one undoable edit. */
+  function replace(op: Op) {
+    const el = input.current;
+    if (!el) return setText(apply(op, text) ?? "");
+    const whole = el.selectionStart === el.selectionEnd;
+    const from = whole ? 0 : el.selectionStart;
+    const to = whole ? el.value.length : el.selectionEnd;
+    const before = el.value;
+    const result = apply(op, before.slice(from, to)) ?? "";
+    const back = document.activeElement as HTMLElement | null;
+    const scroll = el.scrollTop;
+    el.focus();
+    el.setSelectionRange(from, to);
+    applying.current = true;
+    const done = document.execCommand("insertText", false, result);
+    applying.current = false;
+    if (!done) setText(before.slice(0, from) + result + before.slice(to));
+    // Keep a selection on what changed; after a whole-text run, the caret
+    // goes to the start and the view stays where it was.
+    const end = whole ? 0 : from + result.length;
+    el.setSelectionRange(from, end);
+    setSel([from, end]);
+    el.scrollTop = scroll;
+    back?.focus();
+  }
 
   async function run(op: Op) {
     if (op !== copyOp) {
-      setText(apply(op, text) ?? "");
+      replace(op);
       setCopyOp(op);
       clearCopied();
       return;
@@ -109,11 +193,16 @@ export function useTextOps() {
 
   function edit(value: string) {
     setText(value);
+    if (applying.current) return;
     setCopyOp(null);
     clearCopied();
   }
 
-  return { text, edit, run, copyOp, copied, input };
+  function select(el: HTMLTextAreaElement) {
+    setSel([el.selectionStart, el.selectionEnd]);
+  }
+
+  return { text, edit, run, copyOp, copied, input, sel, select };
 }
 
 type Ops = ReturnType<typeof useTextOps>;
@@ -210,6 +299,29 @@ function Legend() {
   );
 }
 
+const count = (n: number) => n.toLocaleString("sv-SE");
+
+/** Characters, words and lines of the selection, or of the whole text. */
+function Count({ ops }: { ops: Ops }) {
+  const [from, to] = ops.sel;
+  const selected = to > from;
+  const part = selected ? ops.text.slice(from, to) : ops.text;
+  if (!ops.text) return null;
+  const chars = [...part].length;
+  const words = part.match(/\S+/g)?.length ?? 0;
+  const lines = part.split("\n").length;
+  return (
+    <p className="mr-1.5 hidden self-center text-xs whitespace-nowrap text-muted-foreground tabular-nums sm:block">
+      {selected && "Markerat: "}
+      {count(chars)} tecken · {count(words)} ord
+      <span className="hidden md:inline">
+        {" "}
+        · {count(lines)} {lines === 1 ? "rad" : "rader"}
+      </span>
+    </p>
+  );
+}
+
 function MoreMenu({ ops }: { ops: Ops }) {
   return (
     <Popover>
@@ -225,24 +337,38 @@ function MoreMenu({ ops }: { ops: Ops }) {
           Fler verktyg
         </TooltipContent>
       </Tooltip>
-      <PopoverContent align="end" side="top" className="w-64 gap-0 p-1">
-        {MORE.map((def) => {
-          const { copying, Icon, label } = face(ops, def);
-          return (
-            <Button
-              key={def.op}
-              variant="ghost"
-              onClick={() => void ops.run(def.op)}
-              className={cn(
-                "h-9 w-full justify-start gap-2.5 px-2.5 font-normal",
-                copying ? "text-primary hover:text-primary" : "text-foreground",
-              )}
-            >
-              <Icon className={cn("size-4", !copying && "text-muted-foreground")} />
-              {label}
-            </Button>
-          );
-        })}
+      {/* An operation focuses the text box to write through it; that
+          mustn't close the menu, or its button couldn't turn into Kopiera. */}
+      <PopoverContent
+        align="end"
+        side="top"
+        className="grid max-h-(--radix-popover-content-available-height) w-72 gap-0 overflow-y-auto p-1 sm:w-[34rem] sm:grid-cols-2 sm:gap-x-1"
+        onFocusOutside={(e) => e.preventDefault()}
+      >
+        {MORE.map((group) => (
+          <div key={group.name} role="group" aria-label={group.name} className="pb-1">
+            <p aria-hidden="true" className="px-2.5 pt-1 pb-0.5 text-xs text-muted-foreground">
+              {group.name}
+            </p>
+            {group.ops.map((def) => {
+              const { copying, Icon, label } = face(ops, def);
+              return (
+                <Button
+                  key={def.op}
+                  variant="ghost"
+                  onClick={() => void ops.run(def.op)}
+                  className={cn(
+                    "h-8 w-full justify-start gap-2.5 px-2.5 font-normal",
+                    copying ? "text-primary hover:text-primary" : "text-foreground",
+                  )}
+                >
+                  <Icon className={cn("size-4", !copying && "text-muted-foreground")} />
+                  {label}
+                </Button>
+              );
+            })}
+          </div>
+        ))}
       </PopoverContent>
     </Popover>
   );
@@ -260,6 +386,7 @@ export function TextBox({ ops }: { ops: Ops }) {
         ref={ops.input}
         value={ops.text}
         onChange={(e) => ops.edit(e.target.value)}
+        onSelect={(e) => ops.select(e.currentTarget)}
         spellCheck={false}
         placeholder="Klistra in text här..."
         className="field-sizing-fixed min-h-72 resize-none rounded-none rounded-t-xl border-0 bg-transparent p-4 shadow-none focus-visible:ring-0 md:text-base dark:bg-transparent"
@@ -277,6 +404,7 @@ export function TextBox({ ops }: { ops: Ops }) {
           </div>
         ))}
         <div className="ml-auto flex sm:gap-0.5">
+          <Count ops={ops} />
           <Legend />
           <MoreMenu ops={ops} />
         </div>

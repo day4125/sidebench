@@ -84,3 +84,73 @@ test("deslugify turns hyphens and underscores into spaces, first letter up", () 
 test("deslugify undoes slugify for plain lowercase-safe text", () => {
   expect(apply("deslug", apply("slug", "Ny rapport"))).toBe("Ny rapport");
 });
+
+test("softClean keeps paragraphs and joins lines inside them", () => {
+  expect(apply("softClean", "Första raden\nfortsätter här.\n\n  Nytt   stycke\n\n\n\nsista")).toBe(
+    "Första raden fortsätter här.\n\nNytt stycke\n\nsista",
+  );
+  expect(apply("softClean", "a\r\nb\r\n\r\nc")).toBe("a b\n\nc");
+});
+
+test("softClean joins words split at a line end, not before och", () => {
+  expect(apply("softClean", "i kom-\nmunen")).toBe("i kommunen");
+  expect(apply("softClean", "barn-\noch ungdomar")).toBe("barn- och ungdomar");
+  // A capital after the hyphen is a real compound, so the hyphen stays.
+  expect(apply("softClean", "EU-\nKommissionen")).toBe("EU-Kommissionen");
+});
+
+test("softClean drops soft hyphens and zero-width characters, keeps nbsp", () => {
+  expect(apply("softClean", 'rä&shy;k­smör​gås 10 000 "x"')).toBe("räksmörgås 10 000 ”x”");
+});
+
+test("nbspNumbers joins thousands groups with non-breaking spaces", () => {
+  expect(apply("nbspNumbers", "10 000 kr och 1 250 000 invånare")).toBe("10 000 kr och 1 250 000 invånare");
+  expect(apply("nbspNumbers", "12 345")).toBe("12 345");
+});
+
+test("nbspNumbers leaves years, short groups and decimals alone", () => {
+  expect(apply("nbspNumbers", "år 2023 100 personer")).toBe("år 2023 100 personer");
+  expect(apply("nbspNumbers", "sidan 12 34 och 5 6789")).toBe("sidan 12 34 och 5 6789");
+  expect(apply("nbspNumbers", "10 000,50 kr")).toBe("10 000,50 kr");
+});
+
+test("sentenceCase lowers a shouting line and capitalizes sentence starts", () => {
+  expect(apply("sentence", "NY RAPPORT OM KLIMATET. DEN VISAR MER!")).toBe("Ny rapport om klimatet. Den visar mer!");
+});
+
+test("sentenceCase keeps acronyms and mixed case in normal text", () => {
+  expect(apply("sentence", "Ny Rapport Från EU Om iPhone")).toBe("Ny rapport från EU om iPhone");
+});
+
+test("sentenceCase does not start a sentence after an abbreviation", () => {
+  expect(apply("sentence", "hon köpte t.ex. äpplen. sedan gick hon")).toBe("Hon köpte t.ex. äpplen. Sedan gick hon");
+  expect(apply("sentence", "första\nandra rad")).toBe("Första\nAndra rad");
+});
+
+test("dedupeLines keeps the first of each line and every empty line", () => {
+  expect(apply("dedupe", "a\nb\n a \n\nb\n\nc")).toBe("a\nb\n\n\nc");
+});
+
+test("bullets add, toggle off and replace other markers", () => {
+  expect(apply("bullets", "ett\n\ntvå")).toBe("• ett\n\n• två");
+  expect(apply("bullets", "• ett\n• två")).toBe("ett\ntvå");
+  expect(apply("bullets", "1. ett\n- två")).toBe("• ett\n• två");
+});
+
+test("numbers count non-empty lines and toggle off", () => {
+  expect(apply("numbers", "ett\n\ntvå\ntre")).toBe("1. ett\n\n2. två\n3. tre");
+  expect(apply("numbers", "1) ett\n2) två")).toBe("ett\ntvå");
+  expect(apply("numbers", "• ett\n• två")).toBe("1. ett\n2. två");
+});
+
+test("stripTags keeps text and line breaks, drops script, style and comments", () => {
+  expect(
+    apply("stripTags", '<h1 class="x">Rubrik</h1><p>Text med <b>fet</b><br>rad</p><!-- c --><script>alert(1)</script><style>p{}</style><p>Sist</p>'),
+  ).toBe("Rubrik\nText med fet\nrad\nSist");
+  expect(apply("stripTags", "a < b och c > d")).toBe("a < b och c > d");
+});
+
+test("decodeEntities handles names, decimal and hex, and leaves unknowns", () => {
+  expect(apply("decodeEntities", "R&auml;k &amp; sm&#246;r &#xE5;&nbsp;x &okänd; &#0;")).toBe("Räk & smör å x &okänd; &#0;");
+  expect(apply("decodeEntities", "&amp;lt;")).toBe("&lt;");
+});
