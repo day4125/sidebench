@@ -20,9 +20,6 @@ import {
 import { useTheme } from "@/lib/theme";
 import { tools, type Tool } from "@/tools/registry";
 
-const live = tools.filter((t) => t.status === "live");
-const soon = tools.filter((t) => t.status === "soon");
-
 // Collapsed, shadcn slides each group label up out of the way (-mt-8), which
 // moves every icon below it. Keep the label's height and only fade it, so the
 // icons hold the same position open and collapsed.
@@ -113,6 +110,8 @@ function BrandRow({ mobile = false, children }: { mobile?: boolean; children: Re
 }
 
 function ToolGroups({ active }: { active?: string }) {
+  const live = tools.filter((t) => t.status === "live");
+  const soon = tools.filter((t) => t.status === "soon");
   return (
     <>
       <SidebarGroup>
@@ -125,16 +124,18 @@ function ToolGroups({ active }: { active?: string }) {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarGroup>
-        <SidebarGroupLabel className={keepLabelSpace}>Kommer snart</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {soon.map((tool) => (
-              <ToolLink key={tool.slug} tool={tool} />
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+      {soon.length > 0 && (
+        <SidebarGroup>
+          <SidebarGroupLabel className={keepLabelSpace}>Kommer snart</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {soon.map((tool) => (
+                <ToolLink key={tool.slug} tool={tool} />
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      )}
     </>
   );
 }

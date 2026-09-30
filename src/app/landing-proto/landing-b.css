@@ -1,0 +1,65 @@
+/* Landing prototype B's motion. A file rather than inline <style>, for the CSP. */
+
+@keyframes fan-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes fan-in {
+  from { opacity: 0; scale: 0.92; filter: blur(4px); }
+  to { opacity: 1; scale: 1; filter: blur(0); }
+}
+
+@keyframes fan-drift {
+  to { stroke-dashoffset: -120; }
+}
+
+/* The half circle's reveal: a solid arc in a mask, drawn from both ends
+   towards the bottom (two halves), so the dotted arc under it appears as
+   if traced. */
+.fan-reveal {
+  stroke-dasharray: 1;
+  animation: fan-draw 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* The dotted arc crawls slowly, so the half circle reads as live. */
+.fan-arc {
+  animation: fan-drift 60s linear infinite;
+}
+
+/* A spoke: drawn from the arc outwards, 0 to 1 along the line. */
+.fan-spoke {
+  stroke-dasharray: 1;
+  animation: fan-draw 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.fan-card {
+  animation: fan-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* A lit spoke fills with teal from the bowl out to the card, then drains
+   back towards the bowl, quicker, when the card is left. The dot on the
+   bowl lights as the fill sets off. */
+.fan-fill {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 0.25s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.fan-fill.is-lit {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fan-reveal,
+  .fan-arc,
+  .fan-spoke,
+  .fan-card {
+    animation: none;
+  }
+  .fan-fill,
+  .fan-fill.is-lit {
+    transition: none;
+  }
+}

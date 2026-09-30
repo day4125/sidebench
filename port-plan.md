@@ -633,6 +633,15 @@ every tool, and the e2e suite is green.
 
 - **PWA / offline install:** later, if wanted.
 
+## Ideas
+
+- **Textmanipulator: special-character picker** (noted 2026-09-29). A
+  small menu with a search field for the uncommon Unicode characters
+  otherwise looked up on Google (dashes, non-breaking and thin spaces,
+  arrows, ×, ±, °, ‰, § and the like): type to filter by name, click or
+  Enter to insert at the cursor or copy. Search by Swedish and English
+  names. Came out of the launcher sketch for the landing page.
+
 ## Decided
 
 - **PDF library:** `pdfjs-dist` directly; WebAssembly off, CSP unchanged
