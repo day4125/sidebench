@@ -18,6 +18,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Below this the sidebar is a strip across the top (useIsMobile's NAV_BREAKPOINT). */
+@theme {
+    --breakpoint-nav: 500px;
+}
+
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: 'Geist Variable', sans-serif;

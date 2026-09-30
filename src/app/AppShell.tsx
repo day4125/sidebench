@@ -17,8 +17,8 @@ export function AppShell({ tool, fill, children }: { tool?: string; fill?: boole
   const Icon = current?.icon;
   return (
     <TooltipProvider>
-      {/* Column below md, where the sidebar is a strip across the top. */}
-      <SidebarProvider className={cn("flex-col md:flex-row", fill && "h-svh")}>
+      {/* Column below the nav breakpoint (500px), where the sidebar is a strip across the top. */}
+      <SidebarProvider className={cn("flex-col nav:flex-row", fill && "h-svh")}>
         <AppSidebar active={tool} />
         <SidebarInset className={cn(fill && "min-h-0 min-w-0")}>
           {current && Icon && (

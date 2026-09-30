@@ -54,7 +54,7 @@ export function AppSidebar({ active }: { active?: string }) {
 }
 
 /**
- * Below md the sidebar becomes a strip across the top of the page: the logo
+ * Below 500px (the nav breakpoint) the sidebar becomes a strip across the top of the page: the logo
  * and a menu button, which opens the tool list and theme toggle below it.
  * Shown and hidden by CSS rather than useIsMobile, so a phone never paints
  * a frame of the desktop rail first. (shadcn's Sidebar still renders its
@@ -63,9 +63,10 @@ export function AppSidebar({ active }: { active?: string }) {
 function MobileNav({ active }: { active?: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <nav aria-label="Verktyg" className="border-b bg-sidebar p-2 text-sidebar-foreground md:hidden">
-      {/* p-2 as in SidebarHeader, so the mark centres on the icons below */}
-      <div className="p-2">
+    <nav aria-label="Verktyg" className="border-b bg-sidebar px-2 text-sidebar-foreground nav:hidden">
+      {/* px-2 as in SidebarHeader, so the mark centres on the icons below;
+          py-1 around the 48px row makes the strip 56px, like the tool header. */}
+      <div className="px-2 py-1">
         <BrandRow mobile>
           <Button
             variant="ghost"
@@ -80,7 +81,7 @@ function MobileNav({ active }: { active?: string }) {
         </BrandRow>
       </div>
       {open && (
-        <div id="mobile-menu">
+        <div id="mobile-menu" className="pb-2">
           <ToolGroups active={active} />
           <div className="mt-2 border-t p-2 pt-4">
             <SidebarMenu>
