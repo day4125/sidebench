@@ -103,7 +103,7 @@ export function deslugify(text: string): string {
     .join("\n");
 }
 
-// Prototype of a gentler "Rensa text" that keeps paragraphs. A blank line
+// A gentler "Rensa text" that keeps paragraphs. A blank line
 // ends a paragraph; single line breaks inside one become spaces. Words split
 // at a line end ("kom-\nmunen") are joined, except before och/eller/samt/till
 // ("barn-\noch" stays "barn- och"); before a capital the hyphen stays

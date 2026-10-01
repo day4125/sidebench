@@ -3,7 +3,7 @@
 // that belong to one tool are imported from that tool, not copied, so this
 // page shows what the tools show. Not in the tool registry or the nav.
 import { useState, type ReactNode } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronDown, ChevronUp, Download, Info, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronDown, ChevronUp, Download, Hammer, Info, RotateCcw, Trash2 } from "lucide-react";
 import { AppShell } from "@/app/AppShell";
 import { mount } from "@/app/mount";
 import { ToolCard } from "@/app/ToolCard";
@@ -26,7 +26,7 @@ import { NumberedTextarea } from "@/tools/diff/NumberedTextarea";
 import type { PdfFile } from "@/tools/pdfview/files";
 import { DropZone as PdfDropZone } from "@/tools/pdfview/PdfViewApp";
 import { KbPerPage, OffsetInput, PageInput, Pill, StarsMenu } from "@/tools/pdfview/Workspace";
-import { tools } from "@/tools/registry";
+import { tools, type Tool } from "@/tools/registry";
 import { CleanButton, TextBox, useTextOps } from "@/tools/text/TextApp";
 
 const SECTIONS = [
@@ -459,6 +459,17 @@ const SAMPLE_HTML = `<!-- rensad -->
 <p class="ingress">Rapporten visar &amp; förklarar resultatet.</p>`;
 
 // Only the size and page count are read.
+/** A tool still to come, for the card's "kommande" state once every registered tool is live. */
+const SOON: Tool = {
+  slug: "exempel",
+  name: "Kommande verktyg",
+  icon: Hammer,
+  href: null,
+  status: "soon",
+  tagline: "",
+  desc: "Ett verktyg som inte är byggt än visas så här på startsidan.",
+};
+
 const pdf = (sizeKb: number): PdfFile => ({ name: "b.pdf", size: sizeKb * 1024, doc: { numPages: 10 } }) as unknown as PdfFile;
 
 function Content() {
@@ -582,7 +593,7 @@ function Content() {
         <Specimen name="Verktygskort, aktivt och kommande" where="Startsidan" wide>
           <ul className="grid w-full gap-4 sm:grid-cols-2">
             <ToolCard tool={tools.find((t) => t.href)!} />
-            <ToolCard tool={tools.find((t) => !t.href)!} />
+            <ToolCard tool={tools.find((t) => !t.href) ?? SOON} />
           </ul>
         </Specimen>
       </Grid>

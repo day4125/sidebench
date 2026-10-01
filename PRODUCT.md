@@ -18,8 +18,8 @@ author's own jobs, not a wider audience.
 Small browser tools for the side jobs of content production: cleaning
 Word-exported HTML for CMS import, one-off text operations, and checking two
 PDFs against each other (for example, spotting big faults after
-compression), and finding special characters to copy. More tools are
-planned (SVG viewer; see `src/tools/registry.ts`).
+compression), finding special characters to copy, and getting SVGs under
+the CMS's 500 kB limit. More tools may follow (see `src/tools/registry.ts`).
 
 Success is a tool that does its one job quickly and correctly, and material
 that never leaves the machine while it does.
@@ -57,7 +57,12 @@ the rule every change is checked against.
   (paste a color, copy it as hex/rgb/hsl/oklch; WCAG 2 contrast of a text and
   background pair on a log ruler, with the nearest AA and AAA fixes for
   either side; preview with color-vision simulation; OS picker and
-  EyeDropper).
+  EyeDropper), SVG-viewer (any SVG against the CMS's hard 500 kB
+  raw limit; elements weighed and shown as a heat view; select by click,
+  marquee or tree and cut a figure out as its own cropped SVG; levers:
+  metadata cleanup and SVGO in a worker, embedded images re-encoded on a
+  canvas, deleting elements, plus "Nå budget"; 90° rotation and recoloring
+  written into the file; code in and out).
 - **Privacy rules (non-negotiable, from `INTENT.md`):** all processing
   local; no network at runtime (no APIs, CDNs, remote fonts, analytics);
   content never written to storage; only UI state persists, under

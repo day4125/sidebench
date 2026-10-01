@@ -44,12 +44,13 @@ export const tools: Tool[] = [
     slug: "svg-viewer",
     name: "SVG-viewer",
     icon: PenTool,
-    href: null,
-    status: "soon",
-    tagline: "Granska, rendera och städa SVG-kod",
+    href: "svg.html",
+    status: "live",
+    tagline: "Få en SVG under 500 kB, eller klipp ut en figur",
     desc:
-      "Klistra in eller öppna en SVG — granska källkod, se renderat " +
-      "resultat, kopiera minifierad eller formaterad utdata.",
+      "Öppna eller klistra in en SVG, se vad som väger mest och minska " +
+      "den: rensa metadata, optimera, komprimera bilder. Klipp ut en " +
+      "figur ur ett kollage med dess egen storlek.",
   },
   {
     slug: "text",

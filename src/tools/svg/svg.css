@@ -1,0 +1,95 @@
+/* SVG-viewer. Backdrops are view only; they never reach the file. */
+
+/* Checkerboard under swatches and thumbnails, so transparency shows. */
+.checker {
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #d4d4d8 25%, transparent 25%),
+    linear-gradient(-45deg, #d4d4d8 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d4d4d8 75%),
+    linear-gradient(-45deg, transparent 75%, #d4d4d8 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+  background-clip: padding-box;
+}
+
+.svg-stage-checker,
+.svg-swatch-checker {
+  --sq: #e4e4e7;
+  background-color: #fafafa;
+  background-image:
+    linear-gradient(45deg, var(--sq) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--sq) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--sq) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--sq) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+.svg-swatch-checker {
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+}
+/* The checker stays light in dark mode too: most drawings are dark ink
+   on paper. The dark backdrop is one click away for light art. */
+.svg-stage-light,
+.svg-swatch-light {
+  background-color: #ffffff;
+}
+.svg-stage-dark,
+.svg-swatch-dark {
+  background-color: #11141c;
+}
+
+/* Overlay marks: hairlines that stay 1px at any zoom. */
+.svg-frame {
+  fill: none;
+  stroke: var(--foreground);
+  stroke-opacity: 0.18;
+  stroke-dasharray: 3 3;
+}
+.svg-sel {
+  fill: var(--primary);
+  fill-opacity: 0.08;
+  stroke: var(--primary);
+  stroke-width: 1.5;
+}
+.svg-union {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 1;
+  stroke-dasharray: 5 3;
+}
+.svg-hover {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 1.5;
+  stroke-opacity: 0.75;
+  stroke-dasharray: 2 2;
+}
+.svg-stage-dark .svg-frame {
+  stroke: #fff;
+}
+
+/* What a lever would take off the bar: hatched over the fill. */
+.svg-ghost {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in oklch, var(--background) 80%, transparent) 0 3px,
+    transparent 3px 6px
+  );
+  box-shadow: inset 2px 0 0 var(--foreground);
+}
+
+.svg-range {
+  width: 100%;
+  accent-color: var(--primary);
+}
+
+.svg-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--muted-foreground) 45%, transparent) transparent;
+}
+
+::selection {
+  background: color-mix(in oklch, var(--primary) 28%, transparent);
+}

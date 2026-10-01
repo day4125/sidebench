@@ -652,6 +652,63 @@ every tool, and the e2e suite is green.
   - Tests: `tests/unit/color/engine.test.ts` (parsing, format round trips,
     contrast, fixes, simulation) and `tests/e2e/color.spec.ts`.
 
+- **SVG-viewer (2026-10-01).** Built new from the SVG list
+  in `flash-ideas.md`. The job that started it: cut one figure out of a
+  book collage (often MB, grouped or flat) and know whether it fits the
+  CMS's hard limit of 500 kB raw (500 000 bytes). It also takes any SVG.
+  - **Spike first** (30 000 elements / 20 MB in Chromium): parse 0.7 s,
+    `<img>` decode 0.9 s, boxes 0.25 s, SVGO 5 s in a worker. Files over
+    25 MB are refused before parsing; above 10 MB the page says it's slow;
+    the heat view is off above 20 000 shapes.
+  - **CSP findings.** Only `<img src=blob:>` renders an SVG faithfully: an
+    inline copy loses its `<style>` and `style=""`. Geometry comes from a
+    hidden, sanitized copy in a shadow root, with the CSS as a constructed
+    stylesheet and `style=""` set through the CSSOM (both allowed). Chromium
+    also reports `style=""` and `<style>` in DOMParser documents that are
+    never shown, so while parsed they go by a same-length placeholder
+    (`xstyl`) and every serialization restores them. Byte counts are
+    unaffected. Broken XML still gets one report from Chromium's own
+    `<parsererror>`; the e2e test for that case allows exactly that one.
+  - **Budget strip** across the top: the file's size, or the selection's
+    raw size as its own file plus SVGO's estimate, against the 500 kB line.
+    A lever's saving shows ahead as a hatched ghost.
+  - **Canvas:** fit, zoom at the pointer, pan (Space or middle button, or
+    drag on touch), backdrops (checker, light, dark) as view only. A click
+    picks the figure (the highest group smaller than 60 % of the drawing),
+    a double-click goes one level in, a marquee catches shapes wholly
+    inside it and folds full groups, Shift adds. Hit-testing uses
+    `isPointInFill`/`isPointInStroke` on the geometry copy with a 64 × 64
+    grid. "Vikt" paints every shape by its bytes (log scale, 12 warm steps
+    off the teal, classes plus one `<style>`, not `style=""`).
+  - **Rail:** Element (virtualized tree, heaviest first, bytes and share),
+    Minska, Färger, Kod.
+  - **Levers,** each previewed with its saving and applied by hand:
+    metadata cleanup (SVGO plugins; `<title>`/`<desc>` off by default and
+    marked), SVGO `preset-default` with multipass, decimals 0–5 and "keep
+    ids", embedded images re-encoded as WebP or JPEG with quality and max
+    side (kept when not smaller), deleting the selection. "Nå budget" runs
+    cleanup, then SVGO at 3, 2 and 1 decimals (2 for drawings under 100
+    units), then images at falling quality, stopping under the line and
+    never deleting.
+  - **Edits written into the file,** each a version that can be undone:
+    cut out (the selection with its ancestors, every `<style>`, the defs it
+    uses and a cropped viewBox), delete, 90° rotation (content wrapped in a
+    rotated group, viewBox and size swapped), recolor (attributes,
+    `style=""` and `<style>`; or to `currentColor`), levers, code edits
+    (files up to 2 MB).
+  - **In and out:** drop, picker, paste anywhere (code or a copied file),
+    `.svgz` unpacked with `DecompressionStream`; copy, download
+    (`-optimerad` / `-urklipp`), data URI.
+  - **Dependency:** `svgo` 4.1.0, pinned, browser build only, in a module
+    worker. Reviewed: no network calls (its `fetch(` is a DOM helper), MIT.
+    Its editor-namespace strings are allowlisted in
+    `scripts/check-remote-urls.mjs`.
+  - Not in yet: node simplification (reducing points; lossy, manual only,
+    if a real file shows it's needed).
+  - Tests: `tests/unit/svg/engine.test.ts` (sizes, tree and weights, boxes,
+    hit test, marquee, cut-out with defs, delete, rotation, palette and
+    recolor, parse errors) and `tests/e2e/svg.spec.ts`.
+
 ### 8. Cut over
 
 - Once the new deworder has parity, delete the legacy engine copy in
