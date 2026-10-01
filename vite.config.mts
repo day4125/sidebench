@@ -52,7 +52,7 @@ function head(): Plugin {
 }
 
 // One HTML entry per tool; no client-side router.
-const pages = ["index", "deworder", "text", "pdfview", "diff", "chars", "elements"];
+const pages = ["index", "deworder", "text", "pdfview", "diff", "chars", "elements", "color"];
 
 export default defineConfig({
   base: "/sidebench/",

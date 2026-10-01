@@ -19,7 +19,7 @@ Small browser tools for the side jobs of content production: cleaning
 Word-exported HTML for CMS import, one-off text operations, and checking two
 PDFs against each other (for example, spotting big faults after
 compression), and finding special characters to copy. More tools are
-planned (SVG viewer, color tools; see `src/tools/registry.ts`).
+planned (SVG viewer; see `src/tools/registry.ts`).
 
 Success is a tool that does its one job quickly and correctly, and material
 that never leaves the machine while it does.
@@ -53,7 +53,11 @@ the rule every change is checked against.
   checker (two texts compared live; inline or side-by-side view, folded
   unchanged runs, hidden characters shown), Specialtecken (search a
   hand-picked character set in Swedish or English, copy the character or its
-  HTML entity; recent copies kept per tab in sessionStorage).
+  HTML entity; recent copies kept per tab in sessionStorage), Färgväljare
+  (paste a color, copy it as hex/rgb/hsl/oklch; WCAG 2 contrast of a text and
+  background pair on a log ruler, with the nearest AA and AAA fixes for
+  either side; preview with color-vision simulation; OS picker and
+  EyeDropper).
 - **Privacy rules (non-negotiable, from `INTENT.md`):** all processing
   local; no network at runtime (no APIs, CDNs, remote fonts, analytics);
   content never written to storage; only UI state persists, under

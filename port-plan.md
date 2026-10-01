@@ -619,6 +619,39 @@ every tool, and the e2e suite is green.
     (live compare, marks, hidden characters, folding, stepping, views,
     phone width, the slow-text handover).
 
+- **Färgväljare (2026-10-01).** Built new, worked out on a throwaway
+  prototype page from the color ideas list. Kept: paste and convert, the
+  OS picker, the EyeDropper, contrast with fixes, color-vision simulation.
+  Dropped: OKLCH tone scales, APCA, image sampling, alpha flattening,
+  saved palettes; harmonies were built and taken out again (maybe later).
+  - **Two wells,** Textfärg and Bakgrund: a swatch (a click opens the OS
+    color picker, `<input type="color">`), a paste field that takes hex
+    (with or without #), rgb(), hsl(), oklch() or anything else the browser
+    reads as a color, and the color as hex, rgb, hsl and oklch, one click
+    to copy each (legacy comma syntax, alpha only when below 1). The
+    EyeDropper button shows only where the browser has the API. Unknown
+    input says "Okänd färg" inside the field and keeps the last color.
+  - **Ratio** between the wells, WCAG 2, truncated (4.496 never shows as
+    4,5), with AA/AAA for body text, large text and graphics/UI, and a
+    swap button.
+  - **The ruler:** 1:1 to 21:1 on a log scale (`ln r / ln 21`), so 3, 4.5
+    and 7 sit at 36, 49 and 64 % instead of crowding the first third. The
+    pair rides it as an "Aa" marker. For each level not yet passed, the
+    nearest passing color is a chip past its line: text fixes above,
+    background fixes below. Nearest means only OKLCH lightness moves (hue
+    kept, chroma lowered only to stay in sRGB), lighter or darker,
+    whichever moves less; a side that can't reach a level gets no chip.
+    Hover or focus previews a chip everywhere and slides the marker;
+    click applies it.
+  - **Preview** of the pair (large, body and small text, a link, two
+    buttons, an icon) with color-vision simulation beside it: Machado et
+    al. 2009 matrices at full severity for protanopia, deuteranopia and
+    tritanopia, plus grayscale, each with its own ratio. It changes only
+    the preview.
+  - Colors live in React state only; nothing is stored.
+  - Tests: `tests/unit/color/engine.test.ts` (parsing, format round trips,
+    contrast, fixes, simulation) and `tests/e2e/color.spec.ts`.
+
 ### 8. Cut over
 
 - Once the new deworder has parity, delete the legacy engine copy in

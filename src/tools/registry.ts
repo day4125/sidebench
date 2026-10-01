@@ -100,12 +100,12 @@ export const tools: Tool[] = [
     slug: "color",
     name: "Färgväljare",
     icon: Palette,
-    href: null,
-    status: "soon",
-    tagline: "Palett, kontrast och formatkonvertering",
+    href: "color.html",
+    status: "live",
+    tagline: "Konvertera färger och kontrollera kontrast",
     desc:
-      "Palettextraktion, kontrastkontroll (WCAG), formatkonvertering " +
-      "mellan hex, rgb, hsl och oklch.",
+      "Klistra in en färg och kopiera den som hex, rgb, hsl eller oklch. " +
+      "Kontrollera kontrasten mot WCAG och hitta närmaste färg som klarar AA eller AAA.",
   },
 ];
 
