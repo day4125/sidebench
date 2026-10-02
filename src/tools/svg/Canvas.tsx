@@ -3,7 +3,7 @@
 // swaps in for the image while "Vikt" is on. View changes never touch the
 // file; the two rotate buttons do (they're edits, undoable).
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
-import { Flame, LoaderCircle, Maximize, Minus, Plus, RotateCcw, RotateCw } from "lucide-react";
+import { Flame, Hand, LoaderCircle, Maximize, Minus, MousePointer2, Plus, RotateCcw, RotateCw } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -26,6 +26,11 @@ interface View {
 }
 
 const TOOLBAR_SPACE = 72;
+const PAN_KEYS: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+const TOOLS = [
+  { id: "select", label: "Markera", tip: "Markera: dra en ruta (V)", icon: MousePointer2 },
+  { id: "pan", label: "Panorera", tip: "Panorera: dra för att flytta vyn (H)", icon: Hand },
+] as const;
 const MIN_SCALE = 0.005;
 const MAX_SCALE = 256;
 
@@ -53,6 +58,8 @@ export function Canvas({ svg, imageUrl, heatUrl, heat, onHeat, selection, hover,
   const [drag, setDrag] = useState<{ kind: "pan" | "marquee"; sx: number; sy: number; x: number; y: number; vx: number; vy: number } | null>(null);
   const [caught, setCaught] = useState<number[]>([]);
   const space = useRef(false);
+  /** What a left-button drag does: draw a marquee, or move the view. */
+  const [tool, setTool] = useState<"select" | "pan">("select");
   const fitted = useRef<string>("");
 
   const v = svg.view;
@@ -146,8 +153,8 @@ export function Canvas({ svg, imageUrl, heatUrl, heat, onHeat, selection, hover,
     stage.current?.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
     e.currentTarget.setPointerCapture(e.pointerId);
     const p = local(e);
-    // On touch a drag pans; a tap still selects.
-    const kind = e.button === 1 || space.current || e.pointerType === "touch" ? "pan" : "marquee";
+    // With the hand tool or on touch a drag pans; a tap still selects.
+    const kind = e.button === 1 || space.current || tool === "pan" || e.pointerType === "touch" ? "pan" : "marquee";
     setDrag({ kind, sx: p.x, sy: p.y, x: p.x, y: p.y, vx: view.x, vy: view.y });
     if (kind === "pan") e.preventDefault();
   }
@@ -185,7 +192,7 @@ export function Canvas({ svg, imageUrl, heatUrl, heat, onHeat, selection, hover,
     const d = drag;
     setDrag(null);
     setCaught([]);
-    if (!d || (d.kind === "pan" && (moved(d) || e.pointerType !== "touch"))) return;
+    if (!d || (d.kind === "pan" && (moved(d) || (e.pointerType !== "touch" && tool !== "pan")))) return;
     if (!moved(d)) {
       const u = toUser(d.sx, d.sy);
       const leaf = svg.hit(u.x, u.y);
@@ -218,7 +225,14 @@ export function Canvas({ svg, imageUrl, heatUrl, heat, onHeat, selection, hover,
     else if (e.key === "-") zoomAt(0.8);
     else if (e.key === "0") fit();
     else if (e.key === "1") zoomAt(1 / view.scale);
-    else return;
+    else if (e.key === "v" || e.key === "V") setTool("select");
+    else if (e.key === "h" || e.key === "H") setTool("pan");
+    else if (e.key in PAN_KEYS) {
+      // Arrows move the camera, so the drawing goes the other way; Shift takes bigger steps.
+      const [dx, dy] = PAN_KEYS[e.key];
+      const step = e.shiftKey ? 240 : 60;
+      setView((cur) => ({ ...cur, x: cur.x - dx * step, y: cur.y - dy * step }));
+    } else return;
     e.preventDefault();
   }
 
@@ -235,13 +249,13 @@ export function Canvas({ svg, imageUrl, heatUrl, heat, onHeat, selection, hover,
         ref={stage}
         tabIndex={0}
         role="application"
-        aria-label="Ritytan. Klicka för att markera, dra en ruta runt det som ska markeras, Skift lägger till. Hjul zoomar, mellanslag och dra panorerar."
+        aria-label="Ritytan. Klicka för att markera, dra en ruta runt det som ska markeras, Skift lägger till. Hjul zoomar, mellanslag och dra eller piltangenterna panorerar. V markerar, H panorerar med musen."
         aria-roledescription="rityta"
         data-testid="svg-stage"
         className={cn(
           "svg-stage relative min-h-0 flex-1 touch-none overflow-hidden outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-inset",
           `svg-stage-${backdrop}`,
-          drag?.kind === "pan" ? "cursor-grabbing" : space.current ? "cursor-grab" : "cursor-crosshair",
+          drag?.kind === "pan" ? "cursor-grabbing" : space.current || tool === "pan" ? "cursor-grab" : "cursor-crosshair",
         )}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -309,6 +323,24 @@ export function Canvas({ svg, imageUrl, heatUrl, heat, onHeat, selection, hover,
         aria-label="Visning"
         className="absolute bottom-4 left-1/2 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-0.5 overflow-x-auto rounded-xl border bg-popover/95 p-1 shadow-lg shadow-foreground/5 backdrop-blur-sm"
       >
+        <div role="radiogroup" aria-label="Verktyg" className="flex items-center gap-0.5">
+          {TOOLS.map((t) => (
+            <Tip key={t.id} label={t.tip}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                role="radio"
+                aria-checked={tool === t.id}
+                aria-label={t.label}
+                onClick={() => setTool(t.id)}
+                className={cn(tool === t.id && "bg-accent text-accent-foreground hover:bg-accent")}
+              >
+                <t.icon />
+              </Button>
+            </Tip>
+          ))}
+        </div>
+        <Divider />
         <Tip label="Anpassa till ytan (0)">
           <Button variant="ghost" size="icon-sm" onClick={fit} aria-label="Anpassa till ytan">
             <Maximize />

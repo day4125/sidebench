@@ -487,8 +487,12 @@ function Strip({ svg, name, selection, est, ghost, onCut, onRemove, onClear, und
           {selected && est?.opt != null && <span className="text-sm text-muted-foreground tabular-nums">≈ {formatBytes(est.opt)} optimerad</span>}
           {selected && est && est.opt === undefined && <LoaderCircle aria-label="Beräknar optimerad storlek" className="size-3.5 animate-spin text-muted-foreground" />}
         </p>
-        {value != null &&
-          (!selected && ghost ? (
+        {/* Kept while the selection's size is pending, so the strip never changes height. */}
+        {value == null ? (
+          <p className="text-xs" aria-hidden="true">
+            &nbsp;
+          </p>
+        ) : !selected && ghost ? (
             <p className="truncate text-xs tabular-nums text-muted-foreground">
               {ghost.label} → <span className="font-medium text-foreground">{formatBytes(ghost.bytes)}</span>
             </p>
@@ -496,7 +500,7 @@ function Strip({ svg, name, selection, est, ghost, onCut, onRemove, onClear, und
             <p className={cn("truncate text-xs font-medium tabular-nums", over ? "text-destructive" : "text-primary")}>
               {over ? `${formatBytes(value - BUDGET)} över gränsen` : `${formatBytes(BUDGET - value)} under gränsen`}
             </p>
-          ))}
+          )}
       </div>
 
       <div className="relative min-w-[14rem] flex-1 pt-5" aria-hidden="true">

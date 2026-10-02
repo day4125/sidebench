@@ -148,6 +148,32 @@ test("a marquee around a figure selects it", async ({ app }) => {
   await expect(app.getByRole("button", { name: /^g\s*figur-1/ })).toHaveAttribute("aria-pressed", "true");
 });
 
+test("arrow keys and the hand tool move the view; a click with the hand still selects", async ({ app }) => {
+  await openFile(app, "figurer.svg", SMALL);
+  const img = app.getByTestId("svg-stage").locator("img");
+  const start = (await img.boundingBox())!;
+
+  // Right arrow shows more to the right, so the drawing moves left.
+  await app.mouse.click(start.x - 20, start.y - 20);
+  await app.keyboard.press("ArrowRight");
+  await expect.poll(async () => (await img.boundingBox())!.x).toBeLessThan(start.x - 30);
+
+  // With the hand, a drag pans instead of drawing a marquee.
+  await app.getByRole("radio", { name: "Panorera" }).click();
+  const before = (await img.boundingBox())!;
+  await app.mouse.move(before.x + 10, before.y + 10);
+  await app.mouse.down();
+  await app.mouse.move(before.x + 60, before.y + 40, { steps: 4 });
+  await app.mouse.up();
+  const after = (await img.boundingBox())!;
+  expect(after.x - before.x).toBeCloseTo(50, 0);
+  expect(after.y - before.y).toBeCloseTo(30, 0);
+  await expect(strip(app)).not.toContainText("Markering");
+
+  await app.mouse.click(after.x + after.width * 0.75, after.y + after.height * 0.5);
+  await expect(app.getByRole("button", { name: /^g\s*figur-2/ })).toHaveAttribute("aria-pressed", "true");
+});
+
 test("cleans metadata with a previewed saving", async ({ app }) => {
   await openFile(app, "figurer.svg", SMALL);
   await app.getByRole("tab", { name: "Minska" }).click();
