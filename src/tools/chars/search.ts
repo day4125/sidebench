@@ -34,6 +34,10 @@ const INDEX: Indexed[] = CHARS.map((char) => {
   return { char, name, en, nameWords, words };
 });
 
+// A typed " or ' stands for every quotation mark, since the keyboard's
+// straight ones aren't in the catalogue.
+const QUOTES = CHARS.filter((c) => /QUOTATION MARK|APOSTROPHE/.test(c.en));
+
 const HEX = /^(?:u\+|0x|&#x)?([0-9a-f]{4,5});?$/;
 
 /** Lower is better; null means no match. */
@@ -53,6 +57,7 @@ function score(item: Indexed, q: string, terms: string[]): number | null {
 export function search(query: string): Char[] {
   const raw = query.trim();
   if (!raw) return CHARS;
+  if (raw === '"' || raw === "'") return QUOTES;
 
   // A pasted character, a code point or an entity in its exact case
   // (Ccedil is Ç, ccedil is ç) finds that character first.

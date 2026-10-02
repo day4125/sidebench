@@ -38,6 +38,12 @@ describe("chars search", () => {
     expect(top("π")).toBe("π");
   });
 
+  it("finds every quotation mark from a typed quote", () => {
+    const quotes = ["”", "“", "„", "’", "‘", "‚", "»", "«", "›", "‹"];
+    expect(search('"').map((c) => c.ch)).toEqual(quotes);
+    expect(search("'").map((c) => c.ch)).toEqual(quotes);
+  });
+
   it("finds super- and subscripts", () => {
     expect(top("upphöjd 2")).toBe("²");
     expect(top("subscript two")).toBe("₂");
