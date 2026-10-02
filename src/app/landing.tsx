@@ -4,9 +4,9 @@
 // load, spokes draw outwards, then the cards come in; hovering or focusing a
 // card fills its spoke with teal from the bowl out to it. Tools not built yet
 // show dimmed and unlinked. Below xl the fan becomes a grid. Behind the fan,
-// echoes of the bowl ripple outwards and, in dark mode, a starry sky sits
-// behind them; both lean towards whichever card is lit. See
-// landing-prototype.md for how it came about.
+// echoes of the bowl ripple outwards and, in dark mode, a starry sky with a
+// crescent moon sits behind them; all of it leans towards whichever card is
+// lit. See landing-prototype.md for how it came about.
 import "./landing.css";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type SVGProps } from "react";
 import { ArrowUpRight, FileCode } from "lucide-react";
@@ -138,6 +138,19 @@ const STARS: Star[] = (() => {
   return stars;
 })();
 
+/**
+ * The moon, dark mode only: a crescent in the gap under the bowl, between
+ * the two bottom spokes and a little left of the middle. Centre (x, y) px
+ * from the fan's centre, disc radius r. It leans with the sky, depth ×
+ * ECHO_SHIFT px.
+ */
+const MOON = { x: -32, y: 236, r: 30, depth: 0.55 };
+
+/** Whether a point is behind the moon (with room for the stars' lean), where no twinkle should flare. */
+function behindMoon(x: number, y: number) {
+  return Math.hypot(x - MOON.x, y - MOON.y) < MOON.r + 40;
+}
+
 /** Whether a point is in the bowl or the space above it, where no stars show. */
 function inBowl(x: number, y: number) {
   const ax = Math.abs(x);
@@ -148,8 +161,8 @@ function inBowl(x: number, y: number) {
   return ax <= cx || y <= cy || Math.hypot(ax - cx, y - cy) <= BR;
 }
 
-/** The twinkling stars, drawn apart from the rest; none inside the bowl, as its mask doesn't reach them. */
-const TWINKLES = STARS.filter((st) => st.twinkle && !inBowl(st.x, st.y));
+/** The twinkling stars, drawn apart from the rest; none inside the bowl, as its mask doesn't reach them, or behind the moon. */
+const TWINKLES = STARS.filter((st) => st.twinkle && !inBowl(st.x, st.y) && !behindMoon(st.x, st.y));
 
 /** The stars are the far field, behind the echoes, and lean less. */
 const DOT_DEPTH = 0.6;
@@ -319,6 +332,7 @@ function Landing() {
                   );
                 })}
               </g>
+              <Moon lean={lean} />
               {ECHOES.map((k, i) => (
                 <path
                   key={k}
@@ -570,6 +584,45 @@ function leanStyle(lean: { x: number; y: number }, depth: number, delay: number)
     translate: `${(lean.x * depth).toFixed(1)}px ${(lean.y * depth).toFixed(1)}px`,
     animationDelay: `${delay}ms`,
   };
+}
+
+/**
+ * The moon, lit on the left, with a faint glow. Always drawn; CSS keeps it
+ * down and faded out in light mode, so switching to dark mode raises it.
+ * Drawn after the stars, so its disc hides the stars behind it.
+ */
+function Moon({ lean }: { lean: { x: number; y: number } }) {
+  const { x, y, r, depth } = MOON;
+  // The crescent: the disc's left half, less a half ellipse (the
+  // terminator) bulging the same way.
+  const crescent = `M ${x} ${y - r} A ${r} ${r} 0 0 0 ${x} ${y + r} A ${r * 0.45} ${r} 0 0 1 ${x} ${y - r} Z`;
+  return (
+    <g className="fan-moon">
+      <defs>
+        <radialGradient id="fan-moon-glow" gradientUnits="userSpaceOnUse" cx={x} cy={y} r={r * 2.4}>
+          <stop offset="0.4" className="[stop-color:var(--color-foreground)]" stopOpacity="0.04" />
+          <stop offset="1" className="[stop-color:var(--color-foreground)]" stopOpacity="0" />
+        </radialGradient>
+        <clipPath id="fan-moon-lit">
+          <path d={crescent} />
+        </clipPath>
+      </defs>
+      <g className="fan-layer" style={leanStyle(lean, depth * ECHO_SHIFT, 900)}>
+        <circle cx={x} cy={y} r={r * 2.4} fill="url(#fan-moon-glow)" />
+        {/* The disc in the page's background, so the stars behind it don't show through. */}
+        <circle cx={x} cy={y} r={r} className="fill-background" />
+        {/* The dark side, just visible: earthshine. */}
+        <circle cx={x} cy={y} r={r} className="fill-foreground stroke-foreground" fillOpacity={0.03} strokeOpacity={0.12} strokeWidth={1} />
+        <path d={crescent} className="fill-foreground" fillOpacity={0.55} />
+        {/* A few craters, on the lit side only. */}
+        <g clipPath="url(#fan-moon-lit)" className="fill-background" fillOpacity={0.3}>
+          <circle cx={x - r * 0.72} cy={y + r * 0.12} r={r * 0.13} />
+          <circle cx={x - r * 0.55} cy={y + r * 0.62} r={r * 0.09} />
+          <circle cx={x - r * 0.68} cy={y - r * 0.5} r={r * 0.07} />
+        </g>
+      </g>
+    </g>
+  );
 }
 
 /** The logo: mark tile left of the name, one line. */

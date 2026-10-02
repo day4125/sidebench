@@ -146,6 +146,23 @@ and the starry sky.
   hard dots pulse in brightness as they cross pixel boundaries, which
   looked like every star twinkling; soft gradient stars fixed that, but the
   page got heavy.
+- **Moon (2026-10-01), dark mode only:** a crescent (r 30 px) in the gap
+  under the bowl, between the two bottom spokes, a little left of the middle
+  (`MOON`: 32 px left of and 236 px below the fan's centre). Lit on the left:
+  the disc's left half less a half-ellipse terminator, at 55% foreground,
+  with three craters clipped to the lit part, the dark side as a faint
+  outline (earthshine), and a soft glow out to 2.4 × r. Its disc is filled
+  with the page background and drawn after the stars, so it hides the stars
+  behind it; twinkles near it are left out (`behindMoon`), as with the bowl.
+  It leans with the sky (`depth` 0.55 × `ECHO_SHIFT`, ~25 px). It's always
+  drawn: light mode keeps it 36 px lower and faded out, so switching to dark
+  mode raises it and switching back sets it (opacity and translate
+  transitions, not `display`). Prototyped at `landing-sun.html`, now gone.
+- **Sun, tried and dropped (2026-10-01):** a light-mode counterpart, a teal
+  disc with a glow, first with slowly turning rays, then a lens flare (five
+  ghosts on a line through the sun, which swung around it on hover). Neither
+  worked out, and a plain disc didn't either; light mode keeps the echoes
+  alone.
 - **Default motif: dots and echoes together.** The dot grid is the far
   field (its lean scaled by `DOT_DEPTH = 0.6`, so its layers move 11–27 px),
   the echoes in front of it (9–45 px), each at its solo opacity. `SHOW` in
