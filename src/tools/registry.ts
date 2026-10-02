@@ -30,29 +30,6 @@ export interface Tool {
 
 export const tools: Tool[] = [
   {
-    slug: "deworder",
-    name: "html-deworder",
-    icon: BrushCleaning,
-    href: "deworder.html",
-    status: "live",
-    tagline: "Gör Word-exporterade .html-filer redo för CMS-import",
-    desc:
-      "Rensa Word-exporterad HTML för CMS-import. Mappa klasser till " +
-      "semantiska taggar, förhandsgranska och ladda ned.",
-  },
-  {
-    slug: "svg-viewer",
-    name: "SVG-viewer",
-    icon: PenTool,
-    href: "svg.html",
-    status: "live",
-    tagline: "Få en SVG under 500 kB, eller klipp ut en figur",
-    desc:
-      "Öppna eller klistra in en SVG, se vad som väger mest och minska " +
-      "den: rensa metadata, optimera, komprimera bilder. Klipp ut en " +
-      "figur ur ett kollage med dess egen storlek.",
-  },
-  {
     slug: "text",
     name: "Textmanipulator",
     icon: Type,
@@ -86,6 +63,17 @@ export const tools: Tool[] = [
       "borttagningar och ändringar.",
   },
   {
+    slug: "deworder",
+    name: "html-deworder",
+    icon: BrushCleaning,
+    href: "deworder.html",
+    status: "live",
+    tagline: "Gör Word-exporterade .html-filer redo för CMS-import",
+    desc:
+      "Rensa Word-exporterad HTML för CMS-import. Mappa klasser till " +
+      "semantiska taggar, förhandsgranska och ladda ned.",
+  },
+  {
     slug: "pdf-compare",
     name: "PDF sida vid sida",
     icon: BookOpen,
@@ -96,6 +84,18 @@ export const tools: Tool[] = [
       "Visa två PDF:er sida vid sida med gemensam bläddring och zoom. " +
       "Stjärnmärk sidor där något skiljer och kopiera listan (1, 5, 7). " +
       "Visar KB per sida för den komprimerade filen.",
+  },
+  {
+    slug: "svg-viewer",
+    name: "SVG-viewer",
+    icon: PenTool,
+    href: "svg.html",
+    status: "live",
+    tagline: "Få en SVG under 500 kB, eller klipp ut en figur",
+    desc:
+      "Öppna eller klistra in en SVG, se vad som väger mest och minska " +
+      "den: rensa metadata, optimera, komprimera bilder. Klipp ut en " +
+      "figur ur ett kollage med dess egen storlek.",
   },
   {
     slug: "color",
