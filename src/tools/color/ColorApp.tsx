@@ -400,9 +400,12 @@ function Ruler({ text, bg, shownText, shownBg, ratio, fixes, onPreview, onApply 
         {LEVELS.map((l) => (
           <span key={l.id} aria-hidden="true" className="absolute -top-2 -bottom-2 w-px bg-foreground/40" style={{ left: `${pos(l.ratio)}%` }} />
         ))}
-        {/* The pair itself rides the ruler. */}
+        {/* The pair itself rides the ruler. It is 36px tall on a 10px bar, so it
+            reaches up over the bottom of the text chips; without
+            pointer-events-none it would slide under the pointer while a chip
+            previews, end the hover, slide back and start it again. */}
         <span
-          className="absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-300 ease-out motion-reduce:transition-none"
+          className="pointer-events-none absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-300 ease-out motion-reduce:transition-none"
           style={{ left: `${pos(ratio)}%` }}
         >
           <Pair text={shownText} bg={shownBg} className="h-9 w-12 text-base shadow-md ring-2 ring-background" />
