@@ -758,6 +758,14 @@ every tool, and the e2e suite is green.
   the source and tests. Each string in the `.md` needs a pointer to where
   it lives (file, and the label or key it belongs to) so the mapping back
   is unambiguous.
+  - Started 2026-10-04 in `copy-review/` (temporary), with Specialtecken
+    as the pilot. Its README has the format and the mapping steps. Files
+    are committed untouched and edited in place, so `git diff` shows the
+    changes. Rules for every page go in `copy-review/_style.md`.
+  - Most e2e tests find elements by their visible text (marked 🧪 in the
+    files), so a copy change updates those tests in the same commit.
+  - Every page gets a UX revisit later. This pass goes ahead anyway; any
+    page revisited later gets its copy checked again then.
 
 ## Decided
 
