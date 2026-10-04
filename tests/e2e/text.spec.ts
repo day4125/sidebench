@@ -34,16 +34,52 @@ const clipboard = (page: Page) => page.evaluate(() => navigator.clipboard.readTe
 test("Rensa text cleans the text and turns into a copy button", async ({ app }) => {
   await input(app).fill('  rä&shy;ksmör­gås   med\n\n"citat"  ');
   await button(app, "Rensa text").click();
-  await expect(input(app)).toHaveValue("räksmörgås med ”citat”");
+  await expect(input(app)).toHaveValue("räksmörgås med\n\n”citat”");
   await expect(button(app, "Rensa text")).toHaveCount(0);
 
   await button(app, "Kopiera").click();
   await expect(button(app, "Kopierad!")).toBeVisible();
-  expect(await clipboard(app)).toBe("räksmörgås med ”citat”");
+  expect(await clipboard(app)).toBe("räksmörgås med\n\n”citat”");
   await expect(app.getByRole("status")).toHaveText("Texten är kopierad till urklipp");
 
   // After 1.6 s it offers to copy again.
   await expect(button(app, "Kopiera")).toBeVisible({ timeout: 3000 });
+});
+
+test("Rensa text runs the recipe set in its menu, and reports what it did", async ({ app }) => {
+  await input(app).fill('Kom-\nmunen skickar e-\npost om "lunch-\nrasten".\n\nNytt stycke.');
+  await button(app, "Rensa text").click();
+  await expect(input(app)).toHaveValue("Kommunen skickar e-post om ”lunchrasten”.\n\nNytt stycke.");
+  const report = button(app, "2 ord ihopsatta, 1 behöll bindestreck");
+  await expect(app.getByText("2 citattecken bytta")).toBeVisible();
+  await report.focus();
+  await expect(app.getByRole("tooltip")).toContainText("Kommunen, lunchrasten");
+  await expect(app.getByRole("tooltip")).toContainText("e-post");
+  await app.keyboard.press("Escape");
+
+  // A setting change remembers the recipe and puts the button back to run,
+  // which hides the report.
+  await button(app, "Inställningar för Rensa text").click();
+  await app.getByRole("checkbox", { name: /Behåll stycken/ }).click();
+  await app.getByRole("checkbox", { name: /Typografiska citattecken/ }).click();
+  await app.keyboard.press("Escape");
+  await expect(report).toHaveCount(0);
+  const saved = await app.evaluate(() => JSON.parse(localStorage.getItem("sidebench:site:text:recipe")!));
+  expect(saved).toMatchObject({ keepParagraphs: false, quotes: false });
+
+  await input(app).fill('a\n\n"b"');
+  await button(app, "Rensa text").click();
+  await expect(input(app)).toHaveValue('a "b"');
+  // The legend follows the recipe.
+  await button(app, "Om knapparna").focus();
+  await expect(app.getByRole("tooltip")).toContainText("gör alla radbrytningar till mellanslag");
+  await expect(app.getByRole("tooltip")).not.toContainText("citattecken");
+  await app.keyboard.press("Escape");
+
+  await button(app, "Inställningar för Rensa text").click();
+  await button(app, "Återställ").click();
+  await expect(app.getByRole("checkbox", { name: /Behåll stycken/ })).toBeChecked();
+  await expect(button(app, "Återställ")).toHaveCount(0);
 });
 
 test("only one button is in copy state at a time", async ({ app }) => {

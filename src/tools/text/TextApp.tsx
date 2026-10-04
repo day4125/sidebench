@@ -9,6 +9,11 @@
 // tooltip explains every button instead of a tooltip per button; only "…"
 // has its own.
 //
+// "Rensa text" runs a recipe of steps (recipe.ts), set in a menu at the
+// button's right end; its label stays the same whatever the recipe. The
+// recipe is a UI setting, so it's remembered. A line under the button says
+// what the last run did, with the hyphen guesses listed word by word.
+//
 // The copy flow is legacy's: an operation rewrites the text and its button
 // turns into "Kopiera" (one button at a time); clicking it copies the text
 // and shows "Kopierad!" for a moment. Any edit to the text resets every
@@ -38,6 +43,7 @@ import {
   ListOrdered,
   ListX,
   Pilcrow,
+  SlidersHorizontal,
   Space,
   WholeWord,
   WrapText,
@@ -45,6 +51,7 @@ import {
 import { cn } from "cn";
 import { AppShell } from "@/app/AppShell";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -53,6 +60,7 @@ import { HIDDEN, tallyHidden } from "@/lib/hidden-chars";
 import { readSetting, writeSetting } from "@/lib/storage";
 import { apply, type Op } from "./engine";
 import { SubDigits, SubLetters, SupDigits, SupLetters } from "./icons";
+import { cleanWith, DEFAULT_RECIPE, describe, type Recipe, type Report } from "./recipe";
 
 type Icon = ComponentType<{ className?: string }>;
 
@@ -62,9 +70,6 @@ interface OpDef {
   label: string;
   icon: Icon;
 }
-
-const CLEAN_INFO =
-  "Tar bort mjuka bindestreck, onödiga radbrytningar, dubbla mellanrum samt byter raka citattecken till typografiska.";
 
 // The toolbar, in joined groups. `legend` and `note` feed the legend tooltip.
 const GROUPS: { name: string; legend: string; note?: string; ops: OpDef[] }[] = [
@@ -141,7 +146,21 @@ const MORE: { name: string; ops: OpDef[] }[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// State: the text and the legacy copy flow.
+// State: the text, the legacy copy flow and the recipe.
+
+function loadRecipe(): Recipe {
+  try {
+    const saved = JSON.parse(readSetting("text:recipe") ?? "{}");
+    const r = { ...DEFAULT_RECIPE };
+    for (const k of Object.keys(r) as (keyof Recipe)[]) {
+      if (typeof saved[k] === typeof r[k]) (r as Record<string, unknown>)[k] = saved[k];
+    }
+    return r;
+  } catch {
+    return { ...DEFAULT_RECIPE };
+  }
+}
+
 
 export function useTextOps() {
   const [text, setText] = useState("");
@@ -153,15 +172,17 @@ export function useTextOps() {
   // Set while an operation writes, so edit() doesn't reset the copy state.
   const applying = useRef(false);
 
-  /** Rewrite the selection, or the whole text, as one undoable edit. */
-  function replace(op: Op) {
+  /** Rewrite the selection, or the whole text, as one undoable edit.
+   * `fn`, if given, does the rewriting instead of the named op. */
+  function replace(op: Op, fn?: (text: string) => string) {
+    const transform = fn ?? ((t: string) => apply(op, t) ?? "");
     const el = input.current;
-    if (!el) return setText(apply(op, text) ?? "");
+    if (!el) return setText(transform(text));
     const whole = el.selectionStart === el.selectionEnd;
     const from = whole ? 0 : el.selectionStart;
     const to = whole ? el.value.length : el.selectionEnd;
     const before = el.value;
-    const result = apply(op, before.slice(from, to)) ?? "";
+    const result = transform(before.slice(from, to));
     const back = document.activeElement as HTMLElement | null;
     const scroll = el.scrollTop;
     el.focus();
@@ -179,9 +200,9 @@ export function useTextOps() {
     back?.focus();
   }
 
-  async function run(op: Op) {
+  async function run(op: Op, fn?: (text: string) => string) {
     if (op !== copyOp) {
-      replace(op);
+      replace(op, fn);
       setCopyOp(op);
       clearCopied();
       return;
@@ -200,6 +221,11 @@ export function useTextOps() {
   function edit(value: string) {
     setText(value);
     if (applying.current) return;
+    reset();
+  }
+
+  /** Every button back to its own face. */
+  function reset() {
     setCopyOp(null);
     clearCopied();
   }
@@ -215,7 +241,39 @@ export function useTextOps() {
     setSel([el.selectionStart, el.selectionEnd]);
   }
 
-  return { text, edit, run, copyOp, copied, input, sel, select, marks, toggleMarks };
+  const [recipe, setRecipeState] = useState(loadRecipe);
+  // What the last run of "Rensa text" did; shown while it offers to copy.
+  const [report, setReport] = useState<Report | null>(null);
+  function setRecipe(r: Recipe) {
+    setRecipeState(r);
+    writeSetting("text:recipe", JSON.stringify(r));
+    // The button means "run" again under the new recipe.
+    if (copyOp === "clean") reset();
+  }
+  function clean() {
+    void run("clean", (t) => {
+      const done = cleanWith(recipe, t);
+      setReport(done.report);
+      return done.text;
+    });
+  }
+
+  return {
+    text,
+    edit,
+    run,
+    copyOp,
+    copied,
+    input,
+    sel,
+    select,
+    marks,
+    toggleMarks,
+    recipe,
+    setRecipe,
+    report,
+    clean,
+  };
 }
 
 type Ops = ReturnType<typeof useTextOps>;
@@ -231,21 +289,144 @@ function face(ops: Ops, def: OpDef) {
 // ---------------------------------------------------------------------------
 // Buttons
 
-/** The lead action, full width. Explained in the toolbar's legend. */
+// The toggles. The order they run in is cleanWith()'s, not this one.
+const STEPS: { key: keyof Recipe; name: string; hint: string }[] = [
+  { key: "keepParagraphs", name: "Behåll stycken", hint: "Tom rad blir kvar, enkla radbrytningar blir mellanslag" },
+  { key: "joinHyphens", name: "Sätt ihop avstavade ord", hint: "kom- / munen blir kommunen" },
+  { key: "quotes", name: "Typografiska citattecken", hint: "\"citat\" blir ”citat”" },
+  { key: "plainSpaces", name: "Hårda mellanslag blir vanliga", hint: "Även smala hårda mellanslag" },
+  { key: "nbspNumbers", name: "Hårt mellanslag i tal", hint: "10 000 hålls ihop över radslut" },
+];
+
+function RecipeSettings({ ops }: { ops: Ops }) {
+  const { recipe, setRecipe: change } = ops;
+  const isDefault = (Object.keys(DEFAULT_RECIPE) as (keyof Recipe)[]).every((k) => recipe[k] === DEFAULT_RECIPE[k]);
+  return (
+    <div className="grid gap-3">
+      <ul className="grid gap-2.5">
+        {STEPS.map((s) => (
+          <li key={s.key}>
+            <label className="flex cursor-pointer items-start gap-2.5">
+              <Checkbox
+                className="mt-0.5"
+                checked={recipe[s.key]}
+                onCheckedChange={(v) => change({ ...recipe, [s.key]: v === true })}
+              />
+              <span className="text-sm leading-tight">
+                {s.name}
+                <span className="block text-xs text-muted-foreground">{s.hint}</span>
+              </span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      <div className="flex items-end justify-between gap-3 border-t pt-2.5">
+        <p className="text-xs text-muted-foreground">
+          Mjuka bindestreck, osynliga tecken och dubbla mellanrum tas alltid bort.
+        </p>
+        {!isDefault && (
+          <Button variant="ghost" size="sm" className="h-7 shrink-0 px-2 text-xs" onClick={() => change({ ...DEFAULT_RECIPE })}>
+            Återställ
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const say = (x: number, one: string, many: string) => `${count(x)} ${x === 1 ? one : many}`;
+const MAX_WORDS = 40;
+
+/** The words behind a hyphen count, for its tooltip. */
+function WordList({ title, words }: { title: string; words: string[] }) {
+  if (!words.length) return null;
+  const more = words.length - MAX_WORDS;
+  return (
+    <span className="block">
+      <span className="font-medium">{title}</span>
+      <span className="block text-muted-foreground">
+        {words.slice(0, MAX_WORDS).join(", ")}
+        {more > 0 && ` och ${count(more)} till`}
+      </span>
+    </span>
+  );
+}
+
+/** What the last run of the button did, in one quiet line. Hyphen
+ * decisions are guesses, so they're listed word by word on hover. */
+function ReportLine({ report }: { report: Report }) {
+  const parts: string[] = [];
+  if (report.quotes) parts.push(say(report.quotes, "citattecken bytt", "citattecken bytta"));
+  if (report.plainSpaces)
+    parts.push(say(report.plainSpaces, "hårt mellanslag gjort vanligt", "hårda mellanslag gjorda vanliga"));
+  if (report.numbers) parts.push(say(report.numbers, "hårt mellanslag i tal", "hårda mellanslag i tal"));
+  if (report.invisible) parts.push(say(report.invisible, "osynligt tecken borttaget", "osynliga tecken borttagna"));
+  const splits = report.joined.length + report.kept.length;
+  const hyphens = [
+    report.joined.length > 0 && say(report.joined.length, "ord ihopsatt", "ord ihopsatta"),
+    report.kept.length > 0 && say(report.kept.length, "behöll bindestreck", "behöll bindestreck"),
+  ].filter(Boolean);
+  if (!splits && !parts.length) return null;
+  return (
+    <p className="text-xs text-muted-foreground">
+      {splits > 0 && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="cursor-help rounded-sm font-medium text-foreground underline decoration-dotted underline-offset-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {hyphens.join(", ")}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" align="start" className="grid max-w-96 gap-2 p-3">
+            <WordList title="Ihopsatta" words={report.joined} />
+            <WordList title="Behöll bindestreck" words={report.kept} />
+          </TooltipContent>
+        </Tooltip>
+      )}
+      {splits > 0 && parts.length > 0 && " · "}
+      {parts.join(" · ")}
+    </p>
+  );
+}
+
+/** The lead action, full width, with its recipe in a menu at the right
+ * end and the last run's report under it. Explained in the legend. */
 export function CleanButton({ ops }: { ops: Ops }) {
   const { copying, Icon, label } = face(ops, { op: "clean", label: "Rensa text", icon: Check });
+  const outline = "border-primary bg-background text-primary hover:bg-primary/5 hover:text-primary dark:bg-background";
   return (
-    <Button
-      variant={copying ? "outline" : "default"}
-      onClick={() => void ops.run("clean")}
-      className={cn(
-        "h-11 w-full text-[0.9375rem]",
-        copying && "border-primary bg-background text-primary hover:bg-primary/5 hover:text-primary dark:bg-background",
-      )}
-    >
-      {copying && <Icon data-icon="inline-start" />}
-      {label}
-    </Button>
+    <div className="grid gap-2">
+      <div className="flex">
+        <Button
+          variant={copying ? "outline" : "default"}
+          onClick={ops.clean}
+          className={cn("h-11 flex-1 rounded-r-none text-[0.9375rem]", copying && cn(outline, "border-r-0"))}
+        >
+          {copying && <Icon data-icon="inline-start" />}
+          {label}
+        </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={copying ? "outline" : "default"}
+              aria-label="Inställningar för Rensa text"
+              className={cn(
+                "h-11 w-11 rounded-l-none border-l border-l-primary-foreground/25",
+                copying && cn(outline, "border-l-primary/30"),
+              )}
+            >
+              <SlidersHorizontal className="size-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" side="bottom" className="w-80 max-w-[calc(100vw-2rem)] p-3">
+            <RecipeSettings ops={ops} />
+          </PopoverContent>
+        </Popover>
+      </div>
+      {ops.report && copying && <ReportLine report={ops.report} />}
+    </div>
   );
 }
 
@@ -276,7 +457,7 @@ const quietCls =
 
 /** One tooltip for every button: "Rensa text", then each pair's icons and
  * what they do. "Fler verktyg" has its own. */
-function Legend() {
+function Legend({ ops }: { ops: Ops }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -287,7 +468,7 @@ function Legend() {
       <TooltipContent side="top" align="end" sideOffset={8} className="block w-88 max-w-[calc(100vw-2rem)] p-3">
         <p className="mb-3 border-b pb-2.5">
           <span className="font-medium">Rensa text</span>
-          <span className="block text-muted-foreground">{CLEAN_INFO}</span>
+          <span className="block text-muted-foreground">{describe(ops.recipe)}</span>
         </p>
         <ul className="grid gap-2.5">
           {GROUPS.map((g) => (
@@ -540,7 +721,7 @@ export function TextBox({ ops }: { ops: Ops }) {
         <div className="ml-auto flex sm:gap-0.5">
           <Count ops={ops} />
           <MarksToggle ops={ops} />
-          <Legend />
+          <Legend ops={ops} />
           <MoreMenu ops={ops} />
         </div>
       </div>
