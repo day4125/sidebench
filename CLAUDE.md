@@ -3,16 +3,20 @@
 Small browser tools for content production. Swedish UI, served from GitHub
 Pages. Commands and test setup are in [README.md](README.md).
 
-@INTENT.md
+@docs/INTENT.md
 
 ## Where things are written down
 
-- **TODO.md** is the backlog. When an item is finished, move it to Done
+- **docs/TODO.md** is the backlog. When an item is finished, move it to Done
   with the date. New follow-ups and deferred ideas go there too.
-- **DECISIONS.md** records settled choices with a date and the reason. Add
+- **docs/DECISIONS.md** records settled choices with a date and the reason. Add
   an entry when a question is decided; don't re-open one without new facts.
-- **PRODUCT.md** describes the users and what the product is for.
+- **PRODUCT.md** describes the users and what the product is for. It
+  stays at the root because the Impeccable skill reads it from there.
 - **docs/archive/** holds finished plans. History, not instructions.
+- **docs/copy-review/** is the copy review in progress (temporary).
+- **AGENTS.md** is a symlink to this file, for other coding agents. Edit
+  CLAUDE.md.
 - How a change was built goes in its commit message, not in a doc.
 
 ## Stack

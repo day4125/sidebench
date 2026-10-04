@@ -6,7 +6,7 @@
 //
 // Same-origin requests after load are allowed here, unlike the other tools:
 // PDF.js loads its worker, and the bundled font, CMap and decoder chunks a
-// document needs, on demand (see DECISIONS.md).
+// document needs, on demand (see docs/DECISIONS.md).
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test as base, type Locator, type Page } from "@playwright/test";

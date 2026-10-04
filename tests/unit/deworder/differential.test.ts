@@ -1,7 +1,7 @@
 // Parity check: the untouched legacy engine (copied from the prodtools repo
 // into ./legacy/) and the port run side by side in the same browser on the
 // same inputs, and must agree exactly. Removed once the port has parity
-// (see TODO.md, Cleanup).
+// (see docs/TODO.md, Cleanup).
 import "./legacy/defaults.js";
 import "./legacy/deworder.js";
 import { describe, expect, test } from "vitest";

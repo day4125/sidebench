@@ -29,7 +29,7 @@ that never leaves the machine while it does.
 Content processed by a tool never leaves the machine, and this is enforced
 rather than promised: a Content Security Policy blocks every outgoing
 connection, tests fail on any off-origin request, and content lives only in
-memory. The code is public so the claim can be checked. See `INTENT.md`,
+memory. The code is public so the claim can be checked. See `docs/INTENT.md`,
 the rule every change is checked against.
 
 ## Operating Context

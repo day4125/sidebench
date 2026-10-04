@@ -8,10 +8,11 @@ Settled choices go in [DECISIONS.md](DECISIONS.md).
 ### Every page
 
 - **Copy review** (started 2026-10-04). Every string a page can show, in
-  one `.md` per page under `copy-review/` (temporary). The user rewrites
+  one `.md` per page under `docs/copy-review/` (temporary). The user rewrites
   strings in place; Claude maps the edits back into the source and tests.
   Format, mapping steps and the page checklist are in
-  `copy-review/README.md`; rules for every page in `copy-review/_style.md`.
+  `docs/copy-review/README.md`; rules for every page in
+  `docs/copy-review/_style.md`.
   Specialtecken is the pilot. Every page also gets a UX revisit later; a
   page revisited then gets its copy checked again.
 - **Visual direction and shared patterns** (left over from the port, step

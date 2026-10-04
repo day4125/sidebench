@@ -1,7 +1,7 @@
 # Copy review
 
 Temporary. One file per page, listing every string the page can show.
-See "Copy review" in `TODO.md` for why.
+See "Copy review" in `docs/TODO.md` for why.
 
 ## How it works
 
