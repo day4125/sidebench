@@ -3,10 +3,6 @@ tests/unit/deworder/local/
 # Local-only test files (e.g. large PDFs for the PDF.js spike)
 tests/local/
 
-# Local-only docs
-AGENTS.md
-CLAUDE.md
-
 # Dependencies, build and test output
 node_modules/
 dist/
@@ -25,4 +21,3 @@ Thumbs.db
 
 # Impeccable design critique snapshots (local only)
 .impeccable/
-flash-ideas.md

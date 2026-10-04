@@ -27,7 +27,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      # Reported, not gating (port-plan.md, "Dependency policy").
+      # Reported, not gating (CLAUDE.md, "Dependencies").
       - run: npm audit
         continue-on-error: true
       # Unit tests, then build (tsc, vite, remote-URL check) + e2e against dist/.

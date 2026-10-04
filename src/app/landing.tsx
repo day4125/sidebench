@@ -6,7 +6,7 @@
 // show dimmed and unlinked. Below xl the fan becomes a grid. Behind the fan,
 // echoes of the bowl ripple outwards and, in dark mode, a starry sky with a
 // crescent moon sits behind them; all of it leans towards whichever card is
-// lit. See landing-prototype.md for how it came about.
+// lit. See docs/archive/landing-prototype.md for how it came about.
 import "./landing.css";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type SVGProps } from "react";
 import { ArrowUpRight, FileCode } from "lucide-react";

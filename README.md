@@ -27,5 +27,6 @@ run Playwright against the production build. Locally both use
 Pushes to `main` are tested and deployed to GitHub Pages by
 `.github/workflows/deploy.yml`.
 
-The React port of the original tools is in progress; see
-[port-plan.md](port-plan.md).
+Backlog in [TODO.md](TODO.md), settled choices in
+[DECISIONS.md](DECISIONS.md). Adding a tool is described in
+[CLAUDE.md](CLAUDE.md#adding-a-tool).

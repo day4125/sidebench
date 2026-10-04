@@ -1,7 +1,7 @@
 # Copy review
 
 Temporary. One file per page, listing every string the page can show.
-See "Copy review, every page" in `port-plan.md` for why.
+See "Copy review" in `TODO.md` for why.
 
 ## How it works
 

@@ -1,13 +1,12 @@
-// PDF sida vid sida (port-plan steps 3, 6 and 7): picking the two files, the
-// workspace (one pair of pages at a time: offset, paging, zoom, stars, drop
-// to replace) and
-// PDF.js under the CSP. Every test also fails on requests off the origin,
+// PDF sida vid sida (docs/archive/port-plan.md, steps 3, 6 and 7): picking
+// the two files, the workspace (one pair of pages at a time: offset, paging,
+// zoom, stars, drop to replace) and PDF.js under the CSP. Every test also fails on requests off the origin,
 // console errors (CSP violations included), PDF.js warnings, and anything
 // stored that isn't UI state.
 //
 // Same-origin requests after load are allowed here, unlike the other tools:
 // PDF.js loads its worker, and the bundled font, CMap and decoder chunks a
-// document needs, on demand (see port-plan.md, step 6).
+// document needs, on demand (see DECISIONS.md).
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test as base, type Locator, type Page } from "@playwright/test";

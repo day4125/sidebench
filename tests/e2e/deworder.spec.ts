@@ -1,7 +1,8 @@
-// The deworder UI (port-plan step 5): upload → map → preview → copy and
-// download, config.json in and out, and the sandboxed previews. Every test
-// also holds the page to INTENT.md: no request after load (not even to our
-// own origin), no console errors, no content in storage.
+// The deworder UI (docs/archive/port-plan.md, step 5): upload → map →
+// preview → copy and download, config.json in and out, and the sandboxed
+// previews. Every test also holds the page to INTENT.md: no request after
+// load (not even to our own origin), no console errors, no content in
+// storage.
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { expect, test as base, type Download, type Page } from "@playwright/test";
