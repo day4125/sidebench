@@ -72,6 +72,11 @@ Settled choices go in [DECISIONS.md](DECISIONS.md).
   the legacy output for `fixtures/word-branches.html` as a second golden
   file (it has no expected output of its own), or drop the fixture.
 - **README: how to add a tool.**
+- **Flaky e2e test** (noted 2026-10-05). `pdfview.spec.ts` "the workspace
+  opens under the tool header and goes fullscreen and back" failed once in
+  a full `npm test` run (a `toHaveAttribute` expectation), then passed
+  four times alone and in the next full run. Likely timing under load;
+  find what it waits on.
 
 ### Later, if wanted
 
