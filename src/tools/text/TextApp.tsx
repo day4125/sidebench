@@ -2,9 +2,10 @@
 // from prodtools' static/text-app.js on the engine. The text lives in this
 // component's state only (INTENT.md) and leaves only through copy.
 //
-// Layout: the text box carries a bar of joined icon buttons (super/subscript
-// digits and letters, case, slug), a character count, a toggle that draws
-// hidden characters in the text and a menu for the rarely used tools;
+// Layout: the text box carries a bar of joined icon buttons (list items onto
+// lines of their own, super/subscript digits and letters, case, slug), a
+// character count, a toggle that draws hidden characters in the text and a
+// menu for the rarely used tools;
 // "Rensa text", the one used most, runs full width below. One legend
 // tooltip explains every button instead of a tooltip per button; only "…"
 // has its own.
@@ -40,7 +41,6 @@ import {
   Link,
   Link2,
   List,
-  ListOrdered,
   ListX,
   Pilcrow,
   SlidersHorizontal,
@@ -73,6 +73,12 @@ interface OpDef {
 
 // The toolbar, in joined groups. `legend` and `note` feed the legend tooltip.
 const GROUPS: { name: string; legend: string; note?: string; ops: OpDef[] }[] = [
+  {
+    name: "Listor",
+    legend: "Ny rad före listpunkter",
+    note: "• och 1. 1) a. a) får egen rad. Siffror och bokstäver bara när de räknar uppåt.",
+    ops: [{ op: "breakItems", label: "Ny rad före listpunkter", icon: List }],
+  },
   {
     name: "Siffror",
     legend: "Upphöjda / nedsänkta siffror",
@@ -123,8 +129,6 @@ const MORE: { name: string; ops: OpDef[] }[] = [
   {
     name: "Rader",
     ops: [
-      { op: "bullets", label: "Punktlista", icon: List },
-      { op: "numbers", label: "Numrerad lista", icon: ListOrdered },
       { op: "dedupe", label: "Ta bort dubbletter", icon: ListX },
     ],
   },

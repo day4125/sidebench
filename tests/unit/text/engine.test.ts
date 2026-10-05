@@ -131,16 +131,27 @@ test("dedupeLines keeps the first of each line and every empty line", () => {
   expect(apply("dedupe", "a\nb\n a \n\nb\n\nc")).toBe("a\nb\n\n\nc");
 });
 
-test("bullets add, toggle off and replace other markers", () => {
-  expect(apply("bullets", "ett\n\ntvå")).toBe("• ett\n\n• två");
-  expect(apply("bullets", "• ett\n• två")).toBe("ett\ntvå");
-  expect(apply("bullets", "1. ett\n- två")).toBe("• ett\n• två");
+test("breakItems puts each bullet on its own line", () => {
+  expect(apply("breakItems", "Vi har: • ett • två ◦ under · tre")).toBe("Vi har:\n• ett\n• två\n◦ under\n· tre");
+  expect(apply("breakItems", "• ett\n• två")).toBe("• ett\n• två");
+  expect(apply("breakItems", "a – b - c * d")).toBe("a – b - c * d");
 });
 
-test("numbers count non-empty lines and toggle off", () => {
-  expect(apply("numbers", "ett\n\ntvå\ntre")).toBe("1. ett\n\n2. två\n3. tre");
-  expect(apply("numbers", "1) ett\n2) två")).toBe("ett\ntvå");
-  expect(apply("numbers", "• ett\n• två")).toBe("1. ett\n2. två");
+test("breakItems breaks before items that count up", () => {
+  expect(apply("breakItems", "Gör så här: 1. Öppna 2. Spara 3. Stäng")).toBe("Gör så här:\n1. Öppna\n2. Spara\n3. Stäng");
+  expect(apply("breakItems", "Välj a) röd b) blå eller c) grön")).toBe("Välj\na) röd\nb) blå eller\nc) grön");
+  expect(apply("breakItems", "1) ett a. x b. y 2) två")).toBe("1) ett\na. x\nb. y\n2) två");
+  expect(apply("breakItems", "A. Först B. Sedan")).toBe("A. Först\nB. Sedan");
+});
+
+test("breakItems handles bullets and numbers together", () => {
+  expect(apply("breakItems", "Två delar: • ett 1. a 2. b • två")).toBe("Två delar:\n• ett\n1. a\n2. b\n• två");
+});
+
+test("breakItems leaves lone numbers and existing lines alone", () => {
+  expect(apply("breakItems", "Se sidan 12. Sedan kapitel 3. Klart")).toBe("Se sidan 12. Sedan kapitel 3. Klart");
+  expect(apply("breakItems", "Steg 1. Gör så, t.ex. med 3.5 liter")).toBe("Steg 1. Gör så, t.ex. med 3.5 liter");
+  expect(apply("breakItems", "1. ett\n2. två")).toBe("1. ett\n2. två");
 });
 
 test("stripTags keeps text and line breaks, drops script, style and comments", () => {

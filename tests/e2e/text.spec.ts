@@ -109,6 +109,7 @@ test("editing the text resets every button", async ({ app }) => {
 
 test("the toolbar runs each operation", async ({ app }) => {
   const cases: [string, string, string][] = [
+    ["Ny rad före listpunkter", "x • a 1. b 2. c", "x\n• a\n1. b\n2. c"],
     ["Nedsänkta siffror", "H2O", "H₂O"],
     ["Upphöjda bokstäver", "abq A", "ᵃᵇq A"],
     ["VERSALER", "Hej Då", "HEJ DÅ"],
@@ -133,8 +134,6 @@ test("Fler verktyg is a menu of the rarely used operations", async ({ app }) => 
     ["Rensa text, behåll stycken", "ett\ntvå\n\ntre", "ett två\n\ntre"],
     ["Ta bort dolda tecken", "rä\u00ADk 10\u00A0000\tkr", "räk 10 000 kr"],
     ["Hårt mellanslag i tal (10 000)", "10 000 kr", "10\u00A0000 kr"],
-    ["Punktlista", "a\nb", "• a\n• b"],
-    ["Numrerad lista", "a\nb", "1. a\n2. b"],
     ["Ta bort dubbletter", "a\nb\na", "a\nb"],
     ["Ta bort HTML-taggar", "<p>Hej <b>du</b></p>", "Hej du"],
     ["Avkoda entiteter (&amp;)", "R&auml;k &amp; sm&#246;r", "Räk & smör"],
@@ -178,6 +177,7 @@ test("one legend tooltip explains every button, on hover and on keyboard focus",
   await expect(tip).toContainText("mjuka bindestreck");
   await expect(tip).toContainText("Alla bokstäver finns inte i unicode");
   await expect(tip).toContainText("Ny rapport blir ny-rapport");
+  await expect(tip).toContainText("Ny rad före listpunkter");
   // A real pointer sends many moves; Radix needs more than one to see it
   // leave the trigger's grace area.
   const box = (await app.getByRole("heading", { name: "Textmanipulator" }).boundingBox())!;

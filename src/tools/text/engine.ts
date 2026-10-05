@@ -201,25 +201,56 @@ export function dedupeLines(text: string): string {
     .join("\n");
 }
 
-const MARKER = /^(\s*)(?:[•\-*–·▪◦]|\d+[.)])\s+/;
+// List items run together on one line, as "Rensa text" leaves them, each
+// put back on a line of its own. Text already on separate lines is left
+// alone.
 
-// Bullets or numbers on every non-empty line. If every line already has
-// this kind, they come off instead; any other markers are replaced.
-export function listLines(kind: "bullet" | "number", text: string): string {
-  var lines = text.split("\n");
-  var filled = lines.filter(function (l) { return l.trim(); });
-  var mine = kind === "bullet" ? /^\s*•\s/ : /^\s*\d+[.)]\s/;
-  var toggleOff = filled.length > 0 && filled.every(function (l) { return mine.test(l); });
-  var n = 0;
-  return lines
-    .map(function (line) {
-      if (!line.trim()) return line;
-      var bare = line.replace(MARKER, "$1");
-      if (toggleOff) return bare;
-      var indent = bare.match(/^\s*/)![0];
-      return indent + (kind === "bullet" ? "• " : ++n + ". ") + bare.slice(indent.length);
-    })
-    .join("\n");
+// Bullet glyphs, Word's among them (· from Symbol, § from Wingdings).
+// Dashes and asterisks aren't, since they also turn up mid-sentence.
+const BULLET = /[^\S\n]+(?=[•◦▪▫‣⁃●○■□►▸➢➤✓✔·§]\s)/g;
+
+export function breakBullets(text: string): string {
+  return text.replace(BULLET, "\n");
+}
+
+// 1. 1) a. a) A. A) after a space and before one.
+const ITEM = /(?<=^|\s)(\d{1,3}|[a-zA-Z])([.)])(?=\s)/g;
+
+// A break before every numbered or lettered item. Only items that count
+// up from 1 or a, two or more in a row, take part, so a sentence ending in
+// a number ("sidan 12. Sedan") stays put. Each kind (1. 1) a. a) A. A))
+// counts on its own, so a lettered list inside a numbered one works.
+export function breakNumbers(text: string): string {
+  var runs = new Map<string, { last: number; at: number[] }>();
+  var marked: number[] = [];
+  function close(key: string) {
+    var run = runs.get(key);
+    if (run && run.at.length > 1) marked.push(...run.at);
+    runs.delete(key);
+  }
+  for (var m of text.matchAll(ITEM)) {
+    var digits = /\d/.test(m[1]);
+    var value = digits ? Number(m[1]) : m[1].toLowerCase().charCodeAt(0) - 96;
+    var key = (digits ? "1" : m[1] === m[1].toLowerCase() ? "a" : "A") + m[2];
+    var run = runs.get(key);
+    if (value === 1) {
+      close(key);
+      runs.set(key, { last: 1, at: [m.index] });
+    } else if (run && value === run.last + 1) {
+      run.last = value;
+      run.at.push(m.index);
+    }
+  }
+  [...runs.keys()].forEach(close);
+  marked.sort(function (a, b) { return b - a; });
+  var out = text;
+  for (var at of marked) {
+    var before = out.slice(0, at);
+    var space = before.match(/[^\S\n]*$/)![0];
+    var lineStart = before.length === space.length || before[before.length - space.length - 1] === "\n";
+    if (!lineStart) out = before.slice(0, before.length - space.length) + "\n" + out.slice(at);
+  }
+  return out;
 }
 
 const BLOCK_END = /<\/(?:p|div|li|h[1-6]|tr|blockquote|pre|ul|ol|table|section|article)\s*>|<br\s*\/?>/gi;
@@ -281,8 +312,7 @@ export const OPS = {
   stripHidden: stripHidden,
   sentence: sentenceCase,
   dedupe: dedupeLines,
-  bullets: function (t: string) { return listLines("bullet", t); },
-  numbers: function (t: string) { return listLines("number", t); },
+  breakItems: function (t: string) { return breakNumbers(breakBullets(t)); },
   stripTags: stripTags,
   decodeEntities: decodeEntities,
 };
