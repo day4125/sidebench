@@ -160,10 +160,14 @@ test("arrow keys and the hand tool move the view; a click with the hand still se
 
   // With the hand, a drag pans instead of drawing a marquee.
   await app.getByRole("radio", { name: "Panorera" }).click();
+  // Drag from the drawing's centre: after the pan above, its left edge can
+  // sit under the sidebar.
   const before = (await img.boundingBox())!;
-  await app.mouse.move(before.x + 10, before.y + 10);
+  const cx = before.x + before.width / 2;
+  const cy = before.y + before.height / 2;
+  await app.mouse.move(cx, cy);
   await app.mouse.down();
-  await app.mouse.move(before.x + 60, before.y + 40, { steps: 4 });
+  await app.mouse.move(cx + 50, cy + 30, { steps: 4 });
   await app.mouse.up();
   const after = (await img.boundingBox())!;
   expect(after.x - before.x).toBeCloseTo(50, 0);

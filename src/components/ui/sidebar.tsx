@@ -23,7 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { PanelLeftIcon } from "lucide-react"
+import { ChevronsLeftIcon, PanelLeftIcon } from "lucide-react"
 
 const SIDEBAR_WIDTH = "12.5rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
@@ -244,7 +244,7 @@ function SidebarTrigger({
   onClick,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar()
+  const { open, toggleSidebar } = useSidebar()
 
   return (
     <Button
@@ -252,14 +252,27 @@ function SidebarTrigger({
       data-slot="sidebar-trigger"
       variant="ghost"
       size="icon-sm"
-      className={cn(className)}
+      // sidebench: the same hover as the menu items, not ghost's muted grey.
+      className={cn(
+        "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground dark:hover:bg-sidebar-accent",
+        className
+      )}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
       }}
       {...props}
     >
-      <PanelLeftIcon />
+      {/* sidebench: while open, hover and focus show a double left chevron, since
+          a click closes the sidebar. */}
+      <PanelLeftIcon
+        className={cn(
+          open && "group-hover/button:hidden group-focus-visible/button:hidden"
+        )}
+      />
+      {open && (
+        <ChevronsLeftIcon className="hidden group-hover/button:block group-focus-visible/button:block" />
+      )}
       <span className="sr-only">Visa eller dölj sidopanelen</span>
     </Button>
   )

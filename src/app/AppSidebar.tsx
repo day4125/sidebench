@@ -1,4 +1,4 @@
-import { Menu, Moon, Sun, X } from "lucide-react";
+import { Menu, Moon, PanelLeft, Sun, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { BrandMark } from "@/app/BrandMark";
 import { Button } from "@/components/ui/button";
@@ -13,10 +13,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme";
 import { tools, type Tool } from "@/tools/registry";
 
@@ -24,6 +24,10 @@ import { tools, type Tool } from "@/tools/registry";
 // moves every icon below it. Keep the label's height and only fade it, so the
 // icons hold the same position open and collapsed.
 const keepLabelSpace = "group-data-[collapsible=icon]:mt-0";
+
+// shadcn stacks menu items flush (gap-0), so a hovered item's background
+// meets the active one's. A 2px gap keeps them apart.
+const toolListGap = "gap-0.5";
 
 export function AppSidebar({ active }: { active?: string }) {
   return (
@@ -47,7 +51,6 @@ export function AppSidebar({ active }: { active?: string }) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
-        <SidebarRail />
       </Sidebar>
     </>
   );
@@ -118,7 +121,7 @@ function ToolGroups({ active }: { active?: string }) {
       <SidebarGroup>
         <SidebarGroupLabel className={keepLabelSpace}>Verktyg</SidebarGroupLabel>
         <SidebarGroupContent>
-          <SidebarMenu>
+          <SidebarMenu className={toolListGap}>
             {live.map((tool) => (
               <ToolLink key={tool.slug} tool={tool} active={tool.slug === active} />
             ))}
@@ -129,7 +132,7 @@ function ToolGroups({ active }: { active?: string }) {
         <SidebarGroup>
           <SidebarGroupLabel className={keepLabelSpace}>Kommer snart</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className={toolListGap}>
               {soon.map((tool) => (
                 <ToolLink key={tool.slug} tool={tool} />
               ))}
@@ -152,7 +155,17 @@ function Brand({ mobile }: { mobile: boolean }) {
   const content = (
     <>
       <span className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-        <BrandMark className="size-5!" />
+        {/* Collapsed, a click opens the sidebar, so hover and focus show the
+            sidebar toggle's icon in place of the mark. */}
+        <BrandMark
+          className={cn(
+            "size-5!",
+            collapsed && "group-hover/menu-button:hidden group-focus-visible/menu-button:hidden",
+          )}
+        />
+        {collapsed && (
+          <PanelLeft className="hidden size-5! group-hover/menu-button:block group-focus-visible/menu-button:block" />
+        )}
       </span>
       <span className="text-base font-semibold tracking-tight">sidebench</span>
     </>
@@ -166,7 +179,11 @@ function Brand({ mobile }: { mobile: boolean }) {
       asChild={!collapsed}
       aria-label={collapsed ? "Visa sidopanel" : undefined}
       onClick={collapsed ? () => setOpen(true) : undefined}
-      className="px-0 group-data-[collapsible=icon]:h-12!"
+      className={cn(
+        "px-0 group-data-[collapsible=icon]:h-12!",
+        // No hover or press background: the logo tile is enough of a target.
+        "hover:bg-transparent hover:text-inherit active:bg-transparent active:text-inherit",
+      )}
     >
       {collapsed ? content : <a href="./">{content}</a>}
     </SidebarMenuButton>
