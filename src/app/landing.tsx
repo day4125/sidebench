@@ -2,7 +2,7 @@
 // a flat-bottomed bowl hanging under them, and the tools fanned out around
 // it, each tied to the bowl by a spoke. The bowl traces in from both ends on
 // load, spokes draw outwards, then the cards come in; hovering or focusing a
-// card fills its spoke with teal from the bowl out to it. Tools not built yet
+// card fills its spoke with the accent from the bowl out to it. Tools not built yet
 // show dimmed and unlinked. Below xl the fan becomes a grid. Behind the fan,
 // echoes of the bowl ripple outwards and, in dark mode, a starry sky with a
 // crescent moon sits behind them; all of it leans towards whichever card is
@@ -71,7 +71,7 @@ const ECHOES = [1.45, 1.95, 2.5, 3.1, 3.75];
 const ECHO_SHIFT = 45;
 
 /**
- * The glow around the lit card: stars within DOT_GLOW px of it turn teal.
+ * The glow around the lit card: stars within DOT_GLOW px of it take the accent color.
  * DOT_AREA is the area the sky's masks cover, px from the fan's centre; wider
  * than any field, plus room to lean.
  */
@@ -82,7 +82,7 @@ const DOT_AREA = { x: -1200, y: -150, width: 2400, height: 900 };
  * The starry sky, dark mode only: one star per STAR_CELL cell at most, jittered inside it, so they
  * spread evenly without lining up. Seeded, so it's the same sky every load.
  * Each star sits in one of three depth layers (far ones smaller, fainter,
- * leaning less); a few are bright, and a quarter twinkle, flaring teal on
+ * leaning less); a few are bright, and a quarter twinkle, flaring in the accent on
  * their own slow cycles.
  */
 const STAR_CELL = 44;
@@ -322,7 +322,7 @@ function Landing() {
                       {stars.map((st, j) => (
                         <circle key={j} cx={st.x} cy={st.y} r={st.r} fillOpacity={st.o} className="fill-foreground" />
                       ))}
-                      {/* The same stars in teal, shown only around the lit card. */}
+                      {/* The same stars in the accent color, shown only around the lit card. */}
                       <g mask="url(#fan-dots-mask)" className={`fan-dots-glow ${lit !== null ? "is-lit" : ""}`}>
                         {stars.map((st, j) => (
                           <circle key={j} cx={st.x} cy={st.y} r={st.r * 1.2} className="fill-primary" />
@@ -384,7 +384,7 @@ function Landing() {
                   strokeWidth={1.25}
                   style={{ animationDelay: `${600 + RANK[i] * 90}ms` }}
                 />
-                {/* The fill: teal drawn from the bowl out to the card while lit,
+                {/* The fill: the accent drawn from the bowl out to the card while lit,
                     drained back to the bowl when not. */}
                 <line
                   x1={p.ax}
@@ -468,7 +468,7 @@ function Landing() {
  * dots) they had Chrome rebuild the page's layers every frame; here each
  * frame clears the canvas and draws only the stars mid-flare, and nothing
  * else on the page is touched. A star rests for most of its cycle, then
- * flares over 12% of it to twice its size in teal and fades back. Each layer
+ * flares over 12% of it to twice its size in the accent and fades back. Each layer
  * follows the lean like the rest of the sky, with the same delay, duration
  * and easing as the CSS transition. Off under reduced motion.
  */
@@ -489,7 +489,7 @@ function Twinkles({ lean }: { lean: { x: number; y: number } }) {
     canvas.width = STAR_SPAN * dpr;
     canvas.height = TW_PAD.h * dpr;
 
-    // The teal, read from the theme; and the loop runs only in dark mode, the
+    // The accent, read from the theme; and the loop runs only in dark mode, the
     // only one with stars. Both are rechecked when the theme changes.
     let color = "";
     let frame = 0;

@@ -16,10 +16,13 @@ Settled choices go in [DECISIONS.md](DECISIONS.md).
   Specialtecken is the pilot. Every page also gets a UX revisit later; a
   page revisited then gets its copy checked again.
 - **Visual direction and shared patterns** (left over from the port, step
-  7). Decide the tokens in `globals.css` (still the first-pass teal
-  direction), and share what the tools have in common: step indicators,
-  drop zones (still local to the deworder and the PDF viewer), action
-  rows, copy and download feedback, errors and status lines, info
+  7). Accent decided (cobalt, plus `--success` green, 2026-10-05); the rest
+  of the tokens in `globals.css` are still first pass. Share what the tools
+  have in common: step indicators, drop zones (still local to the deworder
+  and the PDF viewer), action rows, copy and download feedback (only
+  Textmanipulator's main button uses the green "Kopierad!" so far; its
+  squares and menu, Specialtecken and Färgväljare still confirm in the
+  accent), errors and status lines, info
   tooltips, empty states, keyboard shortcuts. Layout: page width, use of
   the space beside the sidebar, full-window views. Check light and dark,
   phone width, keyboard and screen readers across all pages.

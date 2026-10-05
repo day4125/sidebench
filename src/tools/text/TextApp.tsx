@@ -395,14 +395,19 @@ function ReportLine({ report }: { report: Report }) {
  * end and the last run's report under it. Explained in the legend. */
 export function CleanButton({ ops }: { ops: Ops }) {
   const { copying, Icon, label } = face(ops, { op: "clean", label: "Rensa text", icon: Check });
-  const outline = "border-primary bg-background text-primary hover:bg-primary/5 hover:text-primary dark:bg-background";
+  // Kopiera: primary outline (dark: overrides the outline variant's gray
+  // border). Kopierad!: a soft green tint, so the copy reads as done.
+  const outline = ops.copied
+    ? "border-transparent bg-success text-success-foreground hover:bg-success hover:text-success-foreground dark:border-transparent dark:bg-success dark:hover:bg-success"
+    : "border-primary bg-background text-primary hover:bg-primary/5 hover:text-primary dark:border-primary dark:bg-background";
+  const transition = "transition-[background-color,border-color,color] duration-200";
   return (
     <div className="grid gap-2">
       <div className="flex">
         <Button
           variant={copying ? "outline" : "default"}
           onClick={ops.clean}
-          className={cn("h-11 flex-1 rounded-r-none text-[0.9375rem]", copying && cn(outline, "border-r-0"))}
+          className={cn("h-11 flex-1 rounded-r-none text-[0.9375rem]", transition, copying && cn(outline, "border-r-0"))}
         >
           {copying && <Icon data-icon="inline-start" />}
           {label}
@@ -414,7 +419,8 @@ export function CleanButton({ ops }: { ops: Ops }) {
               aria-label="Inställningar för Rensa text"
               className={cn(
                 "h-11 w-11 rounded-l-none border-l border-l-primary-foreground/25",
-                copying && cn(outline, "border-l-primary/30"),
+                transition,
+                copying && cn(outline, ops.copied ? "border-l-success-foreground/20" : "border-l-primary/30"),
               )}
             >
               <SlidersHorizontal className="size-4" />

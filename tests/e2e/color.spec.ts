@@ -26,10 +26,11 @@ const well = (page: Page, side: "Textfärg" | "Bakgrund") => page.getByRole("reg
 const ratio = (page: Page) => page.getByRole("region", { name: "Kontrast" }).locator("p").first();
 const clipboard = (page: Page) => page.evaluate(() => navigator.clipboard.readText());
 
-test("starts on a failing pair with the text field focused", async ({ app }) => {
+test("starts on the site's own button colors with the text field focused", async ({ app }) => {
   await expect(field(app, "Text")).toBeFocused();
-  await expect(ratio(app)).toHaveText("2,48:1");
-  await expect(app.getByText("Underkänd")).toBeVisible();
+  await expect(field(app, "Bakgrund")).toHaveValue("#1a6fe1");
+  await expect(ratio(app)).toHaveText("4,76:1");
+  await expect(app.getByText("Klarar AA", { exact: true })).toBeVisible();
 });
 
 test("a pasted color shows in every format, and a click copies one", async ({ app }) => {
@@ -46,12 +47,15 @@ test("an unknown color says so, keeps the last one and restores the field on blu
   await field(app, "Bakgrund").fill("blå");
   await expect(field(app, "Bakgrund")).toHaveAttribute("aria-invalid", "true");
   await expect(well(app, "Bakgrund").getByText("Okänd färg")).toBeVisible();
-  await expect(ratio(app)).toHaveText("2,48:1");
+  await expect(ratio(app)).toHaveText("4,76:1");
   await field(app, "Text").focus();
-  await expect(field(app, "Bakgrund")).toHaveValue("#14b8a6");
+  await expect(field(app, "Bakgrund")).toHaveValue("#1a6fe1");
 });
 
 test("a fix on the ruler previews on hover and applies on click", async ({ app }) => {
+  // White on teal: fails, so there are AA fixes to pick from.
+  await field(app, "Bakgrund").fill("#14b8a6");
+  await expect(ratio(app)).toHaveText("2,48:1");
   const fix = app.getByRole("button", { name: /^Byt bakgrund till #[0-9a-f]{6}: .*klarar AA$/ });
   await fix.hover();
   await expect(app.getByText("Klarar AA", { exact: true })).toBeVisible();
@@ -76,9 +80,9 @@ test("a pair that passes AAA has nothing to fix", async ({ app }) => {
 
 test("swap trades the two colors", async ({ app }) => {
   await app.getByRole("button", { name: "Byt plats" }).click();
-  await expect(field(app, "Text")).toHaveValue("#14b8a6");
+  await expect(field(app, "Text")).toHaveValue("#1a6fe1");
   await expect(field(app, "Bakgrund")).toHaveValue("#ffffff");
-  await expect(ratio(app)).toHaveText("2,48:1");
+  await expect(ratio(app)).toHaveText("4,76:1");
 });
 
 test("vision simulation lists each ratio and switches the preview", async ({ app }) => {
@@ -87,5 +91,5 @@ test("vision simulation lists each ratio and switches the preview", async ({ app
   await expect(group.getByRole("radio", { name: /Normalt seende/ })).toHaveAttribute("aria-checked", "true");
   await group.getByRole("radio", { name: /Protanopi/ }).click();
   await expect(group.getByRole("radio", { name: /Protanopi/ })).toHaveAttribute("aria-checked", "true");
-  await expect(group.getByRole("radio", { name: /Protanopi/ })).toContainText("2,24:1");
+  await expect(group.getByRole("radio", { name: /Protanopi/ })).toContainText("4,13:1");
 });

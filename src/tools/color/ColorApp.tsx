@@ -36,7 +36,8 @@ import {
 } from "./engine";
 
 const START_TEXT = parseColor("#ffffff")!;
-const START_BG = parseColor("#14b8a6")!;
+// The site's own primary button: white on the cobalt accent.
+const START_BG = parseColor("#1a6fe1")!;
 
 const SIDE_NAME: Record<Side, string> = { text: "Text", bg: "Bakgrund" };
 
@@ -180,7 +181,7 @@ function Well({ side, color, shown, onColor, copied, onCopy, autoFocus }: WellPr
             autoFocus={autoFocus}
             spellCheck={false}
             autoComplete="off"
-            placeholder="#0f766e, rgb(…), hsl(…), oklch(…)"
+            placeholder="#1a6fe1, rgb(…), hsl(…), oklch(…)"
             aria-invalid={invalid || undefined}
             aria-describedby={invalid ? `${id}-error` : undefined}
             onFocus={(e) => e.currentTarget.select()}

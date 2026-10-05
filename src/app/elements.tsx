@@ -111,6 +111,8 @@ const TOKENS: [string, string][] = [
   ["accent", "bg-accent"],
   ["accent-foreground", "bg-accent-foreground"],
   ["destructive", "bg-destructive"],
+  ["success", "bg-success"],
+  ["success-foreground", "bg-success-foreground"],
   ["border", "bg-border"],
   ["input", "bg-input"],
   ["ring", "bg-ring"],

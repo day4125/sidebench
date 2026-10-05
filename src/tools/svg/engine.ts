@@ -813,7 +813,7 @@ export function replaceImages(d: SvgDoc, hrefs: Map<number, string>): string {
 // ---------------------------------------------------------------------------
 // Heat render
 
-/** Light to heavy: one warm hue, kept off the teal accent. */
+/** Light to heavy: one warm hue, kept off the blue accent. */
 export function heatColor(t: number): string {
   const u = Math.min(1, Math.max(0, t));
   return toHex(fromOklch({ l: 0.93 - 0.35 * u, c: 0.05 + 0.15 * u, h: 60 }));

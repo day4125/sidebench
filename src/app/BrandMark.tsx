@@ -2,7 +2,7 @@ import type { SVGProps } from "react";
 
 // The sidebench mark: a workbench. Lucide has no bench, so it's drawn here
 // on lucide's grid (24 px, 2 px round strokes) to sit with the tool icons.
-// public/favicon.svg is the same drawing on a teal tile.
+// public/favicon.svg is the same drawing on a cobalt tile.
 export function BrandMark(props: SVGProps<SVGSVGElement>) {
   return (
     <svg

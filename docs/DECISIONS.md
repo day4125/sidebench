@@ -4,6 +4,19 @@ Settled choices and why, newest first. Add one when a question is decided;
 if a later decision reverses one, say so in the new entry rather than
 editing the old one. The backlog is in [TODO.md](TODO.md).
 
+## 2026-10-05 · Cobalt accent, soft green for "copied"
+
+The accent moves from teal to cobalt `#1a6fe1`, the same color in light
+and dark mode with white text on it (4.6:1). Picked from seven candidates
+tried live on the elements page. A lighter blue for dark mode (`#68a5ff`
+with dark text) was tried and dropped for looking off; the cost is that
+primary-colored text in dark mode (links, "Kopiera", icons) reaches 3.7:1,
+under AA's 4.5. No color passes 4.5:1 as text on both white and `#14171f`
+(it would need luminance ≤ 0.183 and ≥ 0.228 at once). Teal left green
+free to mean "done": `--success` (a soft green tint) and
+`--success-foreground` (the green text on it), first used for "Kopierad!"
+on Textmanipulator's main button, tint without a border.
+
 ## 2026-09-30 · Clipboard snippets may live in sessionStorage
 
 The planned Clipboard tool keeps its snippets in sessionStorage, like

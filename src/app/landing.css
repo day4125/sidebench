@@ -76,7 +76,7 @@
 /* A background layer (an echo or a star layer) grows in from the fan's centre on
    load, so the sky ripples outwards. When a card is lit it leans towards
    it: a slow ease-out, set off a beat after the spoke's fill so the field
-   seems to follow the teal out. */
+   seems to follow the accent out. */
 .fan-layer {
   transform-box: view-box;
   transform-origin: 0 0;
@@ -84,7 +84,7 @@
   transition: translate 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.08s;
 }
 
-/* The stars' teal glow around the lit card fades in with the lean and
+/* The stars' accent glow around the lit card fades in with the lean and
    out when the card is left. */
 .fan-dots-glow {
   transform-box: view-box;
@@ -97,7 +97,7 @@
   opacity: 0.6;
 }
 
-/* A lit spoke fills with teal from the bowl out to the card, then drains
+/* A lit spoke fills with the accent from the bowl out to the card, then drains
    back towards the bowl, quicker, when the card is left. The dot on the
    bowl lights as the fill sets off. */
 .fan-fill {
