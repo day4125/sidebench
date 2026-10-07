@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { allGlyphs, CHARS, describe as describeChar, lookalikes } from "@/tools/chars/data";
-import { search } from "@/tools/chars/search";
+import { queryCode, search } from "@/tools/chars/search";
 
 const top = (q: string) => search(q)[0]?.ch;
 
@@ -95,5 +95,25 @@ describe("chars search", () => {
     }
     expect(lookalikes("–")).toContain("—");
     expect(lookalikes("—")).toContain("–");
+  });
+});
+
+describe("queryCode", () => {
+  it("gives the code point of a single character", () => {
+    expect(queryCode("-")).toBe("U+002D");
+    expect(queryCode("−")).toBe("U+2212");
+    expect(queryCode(" ")).toBe("U+00A0");
+    expect(queryCode(" ")).toBe("U+0020");
+    expect(queryCode("а")).toBe("U+0430"); // Cyrillic
+    expect(queryCode("😀")).toBe("U+1F600");
+  });
+
+  it("gives none for ASCII letters and digits or more than one code point", () => {
+    expect(queryCode("")).toBeNull();
+    expect(queryCode("p")).toBeNull();
+    expect(queryCode("P")).toBeNull();
+    expect(queryCode("5")).toBeNull();
+    expect(queryCode("--")).toBeNull();
+    expect(queryCode("é")).toBeNull();
   });
 });

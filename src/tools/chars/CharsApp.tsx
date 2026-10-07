@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { useFlash } from "@/hooks/use-flash";
 import { readSession, writeSession } from "@/lib/storage";
 import { CATEGORIES, CHARS, describe, lookalikes, type Char } from "./data";
-import { search } from "./search";
+import { queryCode, search } from "./search";
 
 const RECENT_MAX = 12;
 const ALL = "all";
@@ -302,6 +302,7 @@ export function CharsApp() {
   const sections = useMemo(() => sectionsFor(query, cat, recent.slice(0, cols)), [query, cat, recent, cols]);
   const flat = useMemo(() => sections.flatMap((s) => s.chars), [sections]);
   const searching = query.trim() !== "";
+  const code = queryCode(query);
 
   // A new search or category shows its top match and starts the grid there.
   useEffect(() => {
@@ -442,8 +443,16 @@ export function CharsApp() {
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onSearchKey}
                 placeholder="Sök tecken..."
-                className="h-11 rounded-xl bg-card pr-10 pl-10 text-base shadow-xs md:text-base [&::-webkit-search-cancel-button]:hidden"
+                className={cn("h-11 rounded-xl bg-card pl-10 text-base shadow-xs md:text-base [&::-webkit-search-cancel-button]:hidden", code ? "pr-28" : "pr-10")}
               />
+              {code && (
+                <span
+                  title="Kodpunkt"
+                  className="absolute top-1/2 right-11 -translate-y-1/2 font-mono text-xs text-muted-foreground tabular-nums"
+                >
+                  {code}
+                </span>
+              )}
               {query && (
                 <Button
                   variant="ghost"

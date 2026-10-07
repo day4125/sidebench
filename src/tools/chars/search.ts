@@ -5,7 +5,7 @@
    name matches, so "pil" puts the arrows before "Kapital". A code point
    (U+2192, 2192, 0x2192) or a pasted character finds that character
    first. */
-import { CHARS, type Char } from "./data";
+import { CHARS, codePoint, type Char } from "./data";
 
 /** Lowercase, accents off (so "grader" and "gräder" both work). */
 function fold(s: string): string {
@@ -74,4 +74,12 @@ export function search(query: string): Char[] {
     .map((r) => r.item.char);
 
   return [...first, ...ranked];
+}
+
+/** The code point of a search that is a single character, shown in the
+ * search bar. The raw query, untrimmed, so a pasted space or NBSP counts.
+ * ASCII letters and digits get none: they're the start of a typed word. */
+export function queryCode(query: string): string | null {
+  if ([...query].length !== 1 || /[a-z0-9]/i.test(query)) return null;
+  return codePoint(query);
 }

@@ -47,6 +47,16 @@ test("an unknown search says so", async ({ app }) => {
   await expect(app.getByText("Inga tecken matchar ”qqzz”.")).toBeVisible();
 });
 
+test("a single pasted character shows its code point in the search bar", async ({ app }) => {
+  const code = app.getByTitle("Kodpunkt", { exact: true });
+  await searchBox(app).fill("-");
+  await expect(code).toHaveText("U+002D");
+  await searchBox(app).fill("\u00a0");
+  await expect(code).toHaveText("U+00A0");
+  await searchBox(app).fill("p");
+  await expect(code).toHaveCount(0);
+});
+
 test("arrow keys move through the grid and typing returns to the search", async ({ app }) => {
   await app.keyboard.press("ArrowDown");
   await expect(tile(app, "Kort tankstreck")).toBeFocused();
