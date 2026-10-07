@@ -9,7 +9,7 @@ another file. The sidebar and header come from the shell (`shell.md`).
   The tool's name: browser tab, sidebar, start page card. `src/tools/registry.ts` · chars → `name`, and `chars.html` → `<title>`
 - **Sök och kopiera tecken som tangentbordet saknar**
   Tagline on the start page. `src/tools/registry.ts` · chars → `tagline`
-- **Sök bland typografiska, matematiska och andra specialtecken på svenska eller engelska. Kopiera tecknet eller dess HTML-entitet.**
+- **Sök bland typografiska, matematiska och andra specialtecken på svenska eller engelska. Se kodpunkt och HTML-entitet och kopiera tecknet.**
   Description on the start page's tool card. `src/tools/registry.ts` · chars → `desc`
 
 ## Search
@@ -21,16 +21,22 @@ another file. The sidebar and header come from the shell (`shell.md`).
 - **Töm sökningen**
   aria-label of the × button, shown in the field once something is typed. `<Button aria-label>` next to the input
 
-## Category chips
+## Category menu
 
-- **Kategori**
-  Screen-reader name of the chip row. `role="group"` → `aria-label`
+A button beside the search opens the list of categories. `CategoryMenu`
+
 - **Alla**
-  First chip, all categories. `[{ id: ALL, name: "Alla" }, …]`
+  The button's label with no category chosen, and the first item in the
+  list. `[{ id: ALL, name: "Alla" }, …]`
+- **Kategori: {name}**
+  Screen-reader name of the button, with the chosen category's full name.
+  `CategoryMenu` → `aria-label`
+- **Kategori**
+  Screen-reader name of the list. `role="group"` → `aria-label`
 
-The rest are in `src/tools/chars/data.ts` · `CATEGORIES`. A chip shows the
-short name when there is one; the long name is used as the section heading
-and on the "Kategori" line in the details panel.
+The rest are in `src/tools/chars/data.ts` · `CATEGORIES`. The button, the
+list and the band's "Kategori" show the short name when there is one; the
+long name heads the section in the grid and is the list item's tooltip.
 
 - **Typografi**
 - **Mellanrum**
@@ -44,12 +50,6 @@ and on the "Kategori" line in the details panel.
 
 ## Grid section headings
 
-- **Senast kopierade** 🧪
-  First section, only with no search and "Alla" selected. `sectionsFor` → `"recent"` title
-- **i den här fliken**
-  Dimmed text after "Senast kopierade". `<h2>` → `s.id === "recent"` span
-- **Tecken du kopierar hamnar här.**
-  In the "Senast kopierade" row before anything has been copied in this tab. Placeholder row in the sections map
 - **1 träff** / **{n} träffar**
   Heading over the results while searching; `{n}` is the number of hits. `sectionsFor` → `"hits"` title
 - The category names above head their sections when not searching.
@@ -74,48 +74,38 @@ Shown when a search matches nothing.
   `data.ts`, not reviewed here.
   > Say if you want them in a file of their own.
 
-## Details panel (wide screens)
+## Details band (wide screens)
 
-The panel to the right of the grid, showing the hovered or selected character.
+The band over the search, showing the chosen character. `DetailsBand`
 
 - **Valt tecken**
-  Screen-reader name of the panel. `Details` → `<section aria-label>`
+  Screen-reader name of the band. `<section aria-label>`
 - Heading: the character's Swedish name, with its English Unicode name
   under it in sentence case (generated, not written by hand).
-- **Kategori**
-  Label in the facts list. `Details` → first `<dt>`
-- **Kodpunkt**
-  Label in the facts list. `Details` → second `<dt>`
-- **HTML**
-  Label in the facts list. `Details` → third `<dt>`
-- **Kopiera tecken**
-  Main button. `Details` → first `CopyButton label`
-- **HTML** 🧪
-  Second button, copies the HTML entity. `Details` → second `CopyButton label`
-- **Kopierat!**
-  Replaces the label of the button just used, for 1.4 s. `CopyButton` → `done`
+- **Kopiera tecken** 🧪
+  The copy button, beside the heading. `CopyButton label`
+- **Kopierat!** 🧪
+  Replaces the button's label for 1.4 s. `CopyButton` → `done`
+- **Kodpunkt**, **HTML**, **Kategori**
+  Labels of the facts row under the heading. `<dt>`s
 - **Förväxlas lätt med**
-  Heading over lookalike characters, when the character has any. `Details` → `<h3>`
+  Label before the lookalike characters, when the character has any. `Lookalikes` → `<h3>`
   > A comment in `data.ts` quotes this as "Förväxlas med"; updated with whatever this becomes.
 - Lookalike buttons: screen-reader name **{name}, {code}**, tooltip
-  **{name} · {code}** (e.g. "Kort tankstreck · U+2013"). `Details` → `like.map` button
-
-## Hint under the panel (wide screens)
-
-- **Klick kopierar. Enter i sökfältet kopierar första träffen, pilarna flyttar i rutnätet.**
-  "Enter" is set as a key. `<aside>` → `<p>` after `<Details>`
+  **{name} · {code}** (e.g. "Kort tankstreck · U+2013"). A click chooses
+  the character. `Lookalikes` → `like.map` button
 
 ## Bottom bar (narrow screens)
 
-Replaces the panel below the `lg` breakpoint.
+Replaces the band below the `lg` breakpoint.
 
 - **Valt tecken**
   Screen-reader name of the bar. `DetailsBar` → `<section aria-label>`
 - Shows the name and **{code} · {html}** (e.g. "U+2014 · &mdash;").
 - **Kopiera**
-  The bar's button (shorter than the panel's "Kopiera tecken"). `DetailsBar` → `CopyButton label`
+  The bar's button (shorter than the band's "Kopiera tecken"). `DetailsBar` → `CopyButton label`
 - **Kopierat!**
-  As in the panel.
+  As in the band.
 
 ## Screen-reader status
 
@@ -123,7 +113,5 @@ Read aloud after a copy; not visible. `<p role="status">`, set in `copy`.
 
 - **Kopierat: {name}** 🧪
   After copying the character.
-- **Kopierat: {name} som HTML**
-  After copying the HTML entity.
 - **Kunde inte kopiera. Tecknet är markerat, tryck Ctrl+C.**
-  When the clipboard refuses; the character in the panel is selected so it can be copied by hand.
+  When the clipboard refuses; the character in the band is selected so it can be copied by hand.

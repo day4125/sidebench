@@ -1,7 +1,8 @@
-// Specialtecken: search, copy by click and by Enter, the per-tab recents.
+// Specialtecken: search, choose by click, copy by button and by Enter, the
+// category menu.
 // Every test also holds the page to INTENT.md: no request after load, no
 // console errors, nothing stored outside sidebench:site:*.
-import { expect, test as base, type Locator, type Page } from "@playwright/test";
+import { expect, test as base, type Page } from "@playwright/test";
 import { storedOutsideUi, watchConsole, watchNetwork } from "./helpers";
 
 const test = base.extend<{ app: Page }>({
@@ -22,8 +23,6 @@ const test = base.extend<{ app: Page }>({
 
 const searchBox = (page: Page) => page.getByRole("searchbox", { name: "Sök tecken" });
 const tile = (page: Page, name: string) => page.getByRole("button", { name, exact: true }).first();
-/** Distance from the top of the document, unaffected by scrolling. */
-const docTop = (l: Locator) => l.evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
 const clipboard = (page: Page) => page.evaluate(() => navigator.clipboard.readText());
 
 test("the search field has focus, and Enter copies the top match", async ({ app }) => {
@@ -35,11 +34,30 @@ test("the search field has focus, and Enter copies the top match", async ({ app 
   await expect(app.getByRole("status")).toHaveText("Kopierat: Långt tankstreck");
 });
 
-test("a click copies the character, the HTML button its entity", async ({ app }) => {
+test("a click chooses a character, the button copies it", async ({ app }) => {
+  await app.evaluate(() => navigator.clipboard.writeText("x"));
   await tile(app, "Grader").click();
+  await expect(app.getByRole("heading", { name: "Grader" })).toBeVisible();
+  expect(await clipboard(app)).toBe("x");
+  await app.getByRole("button", { name: "Kopiera tecken" }).click();
   expect(await clipboard(app)).toBe("°");
-  await app.getByRole("button", { name: "HTML" }).click();
-  expect(await clipboard(app)).toBe("&deg;");
+  await expect(app.getByRole("button", { name: "Kopierat!" })).toBeVisible();
+});
+
+test("Enter on a tile copies it, a lookalike is chosen by click", async ({ app }) => {
+  await app.keyboard.press("ArrowDown");
+  await app.keyboard.press("Enter");
+  expect(await clipboard(app)).toBe("–");
+  await app.getByRole("button", { name: "Minus, U+2212" }).click();
+  await expect(app.getByRole("heading", { name: "Minus", exact: true })).toBeVisible();
+});
+
+test("the category menu narrows the grid", async ({ app }) => {
+  await app.getByRole("button", { name: "Kategori: Alla" }).click();
+  await app.getByRole("button", { name: "Pilar", exact: true }).click();
+  await expect(app.getByRole("button", { name: "Kategori: Pilar och former" })).toBeVisible();
+  await expect(app.getByRole("heading", { name: "Pilar och former" })).toBeVisible();
+  await expect(app.getByRole("heading", { name: "Typografi" })).toHaveCount(0);
 });
 
 test("an unknown search says so", async ({ app }) => {
@@ -65,22 +83,4 @@ test("arrow keys move through the grid and typing returns to the search", async 
   await app.keyboard.type("p");
   await expect(searchBox(app)).toBeFocused();
   await expect(searchBox(app)).toHaveValue("p");
-});
-
-test("recently copied characters show at once and survive a reload", async ({ app }) => {
-  const recent = app.getByRole("region", { name: "Senast kopierade" });
-  await expect(recent).toContainText("Tecken du kopierar hamnar här.");
-  const top = await docTop(tile(app, "Kort tankstreck"));
-
-  await tile(app, "Pil höger").click();
-  await expect(recent.getByRole("button", { name: "Pil höger" })).toBeVisible();
-  // The grid below didn't move.
-  expect(await docTop(tile(app, "Kort tankstreck"))).toBe(top);
-
-  await tile(app, "Grader").click();
-  await recent.getByRole("button", { name: "Pil höger" }).click();
-  expect(await app.evaluate(() => sessionStorage.getItem("sidebench:site:chars:recent"))).toBe('["°","→"]');
-
-  await app.reload();
-  await expect(recent.getByRole("button", { name: "Grader" })).toBeVisible();
 });

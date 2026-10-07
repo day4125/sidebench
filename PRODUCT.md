@@ -52,8 +52,8 @@ the rule every change is checked against.
   one page pair at a time, star pages that differ, KB per page), Diff
   checker (two texts compared live; inline or side-by-side view, folded
   unchanged runs, hidden characters shown), Specialtecken (search a
-  hand-picked character set in Swedish or English, copy the character or its
-  HTML entity; recent copies kept per tab in sessionStorage), Färgväljare
+  hand-picked character set in Swedish or English, choose one to see its
+  code point, HTML entity and lookalikes, and copy it), Färgväljare
   (paste a color, copy it as hex/rgb/hsl/oklch; WCAG 2 contrast of a text and
   background pair on a log ruler, with the nearest AA and AAA fixes for
   either side; preview with color-vision simulation; OS picker and

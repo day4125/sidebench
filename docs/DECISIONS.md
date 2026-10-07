@@ -4,6 +4,21 @@ Settled choices and why, newest first. Add one when a question is decided;
 if a later decision reverses one, say so in the new entry rather than
 editing the old one. The backlog is in [TODO.md](TODO.md).
 
+## 2026-10-07 · Specialtecken: a click chooses, the button copies
+
+A click on a tile only chooses the character; copying is the "Kopiera
+tecken" button, Enter on a tile, or Enter in the search (top match). Copying
+on click while also showing the character in the details mixed two
+actions. The details became a band above the search, sticky with it in a
+solid head, and the grid got the full width. The categories moved from a
+row of chips into a menu beside the search. Dropped: the HTML copy button
+(the entity is still shown and selects with one click), the hover preview
+(it swapped the character on the way to the button), the hint text, and
+the recent copies. Recents were tried in the grid, in the details, beside
+the search and behind a button, and none earned its place, so the tool no
+longer writes anything to sessionStorage. Prototyped with a panel beside
+the grid and a dock at the bottom; the band won.
+
 ## 2026-10-05 · Cobalt accent, soft green for "copied"
 
 The accent moves from teal to cobalt `#1a6fe1`, the same color in light

@@ -98,6 +98,8 @@ Settled choices go in [DECISIONS.md](DECISIONS.md).
 
 ## Done
 
+- 2026-10-07 Specialtecken: layout reworked (details band over the search,
+  categories in a menu, click chooses, no recents). See DECISIONS.md.
 - 2026-10-04 Textmanipulator: "Rensa text" runs a recipe you set, which
   also always removes soft hyphens and zero-width characters (the planned
   "turbo mode").

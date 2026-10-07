@@ -49,7 +49,7 @@ export const tools: Tool[] = [
     tagline: "Sök och kopiera tecken som tangentbordet saknar",
     desc:
       "Sök bland typografiska, matematiska och andra specialtecken på " +
-      "svenska eller engelska. Kopiera tecknet eller dess HTML-entitet.",
+      "svenska eller engelska. Se kodpunkt och HTML-entitet och kopiera tecknet.",
   },
   {
     slug: "diff",
