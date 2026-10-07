@@ -54,6 +54,14 @@ Settled choices go in [DECISIONS.md](DECISIONS.md).
     them by name; nothing ties a mark in the text to its meaning.
 - **Dark mode:** the main button's "Kopiera" outline is grey, not teal.
 
+### Specialtecken
+
+- **Any dash finds every dash.** A typed `-` (not in the catalogue, so it
+  finds nothing today) should list the hyphens, dashes and minus, the way a
+  `"` lists every quotation mark (`QUOTES` in `search.ts`). The dash group
+  in `LOOKALIKES` (`data.ts`) is the list. Maybe every lookalike group,
+  pasting any member of one.
+
 ### New tools
 
 - **Clipboard** (noted 2026-09-30). Snippets copied over and over while
