@@ -4,6 +4,32 @@ Settled choices and why, newest first. Add one when a question is decided;
 if a later decision reverses one, say so in the new entry rather than
 editing the old one. The backlog is in [TODO.md](TODO.md).
 
+## 2026-10-11 · One page width, one upload pattern
+
+Every tool page that doesn't fill the window uses one column, `max-w-tool`
+(72rem, set in `globals.css`). Before, Textmanipulator was 48rem, the PDF
+upload 56rem and the SVG empty state 48rem, centered vertically, while the
+rest were 72rem. Full-window views (the SVG and PDF workspaces) are the
+only exception. The cost: Textmanipulator's box is now as wide as Diff's
+two boxes together, so long pasted lines run to about 150 characters.
+
+The three upload screens (deworder, PDF, SVG) share one drop zone
+(`src/components/drop-zone.tsx`) and one source picker
+(`src/components/source-picker.tsx`): the same height, an accent folder
+icon, then title, "Dra och släpp eller välj en fil" and formats. Tools that
+take pasted code get the same "Fil / Klistra in" pill switch. The action is
+"Öppna" in every tool (it was "Fortsätt", "Öppna sida vid sida" and "Öppna
+koden"). It stays visible in both tabs, disabled until there's something to
+open, so it doesn't appear and disappear when the switch changes. It sits at
+the bottom right, under the input, except in the deworder, where it stays
+beside the switch because the later steps keep their actions at the top.
+
+A chosen file opens straight away, so the deworder no longer waits for a
+click after a file (as SVG-viewer already did). The button opens pasted
+code, the PDF pair, or a file kept when coming back to step 1. In
+SVG-viewer's Fil tab it therefore stays disabled; the alternative, a click
+after every file in both tools, was judged slower.
+
 ## 2026-10-07 · Specialtecken: a click chooses, the button copies
 
 A click on a tile only chooses the character; copying is the "Kopiera

@@ -107,7 +107,7 @@ export function DiffApp() {
 
   return (
     <AppShell tool="diff">
-      <div className="mx-auto flex max-w-6xl flex-col gap-5">
+      <div className="mx-auto flex max-w-tool flex-col gap-5">
         <div className="grid gap-3 md:grid-cols-2">
           {SIDES.map((side, i) => (
             <NumberedTextarea

@@ -9,6 +9,7 @@ import { mount } from "@/app/mount";
 import { ToolCard } from "@/app/ToolCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { DropZone } from "@/components/drop-zone";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -20,11 +21,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SourceName, StepHeader, StepIndicator } from "@/tools/deworder/DeworderApp";
 import { SourceView } from "@/tools/deworder/PreviewStep";
-import { DropZone as HtmlDropZone } from "@/tools/deworder/UploadStep";
 import { FoldButton, Kbd, Mark, StepButton, TINT, ViewSwitch, type View } from "@/tools/diff/DiffApp";
 import { NumberedTextarea } from "@/tools/diff/NumberedTextarea";
 import type { PdfFile } from "@/tools/pdfview/files";
-import { DropZone as PdfDropZone } from "@/tools/pdfview/PdfViewApp";
 import { KbPerPage, OffsetInput, PageInput, Pill, StarsMenu } from "@/tools/pdfview/Workspace";
 import { tools, type Tool } from "@/tools/registry";
 import { CleanButton, TextBox, useTextOps } from "@/tools/text/TextApp";
@@ -234,11 +233,11 @@ function Buttons() {
               <div key={v} className="contents">
                 <code className="font-mono text-xs text-muted-foreground">{v}</code>
                 <span>
-                  <Button variant={v}>Fortsätt</Button>
+                  <Button variant={v}>Öppna</Button>
                 </span>
                 <span>
                   <Button variant={v} disabled>
-                    Fortsätt
+                    Öppna
                   </Button>
                 </span>
               </div>
@@ -246,7 +245,7 @@ function Buttons() {
           </div>
         </Specimen>
         <Grid>
-          <Specimen name="Storlekar" where="xs: PDF-sidor i stjärnmenyn, sm: Kopiera, lg: Öppna sida vid sida">
+          <Specimen name="Storlekar" where="xs: PDF-sidor i stjärnmenyn, sm: Kopiera, lg: Nå budget automatiskt">
             {SIZES.map((s) => (
               <Button key={s} size={s} variant="outline">
                 {s}
@@ -273,8 +272,8 @@ function Buttons() {
               <Download data-icon="inline-start" />
               Ladda ned HTML-fil
             </Button>
-            <Button size="lg">
-              Öppna sida vid sida
+            <Button>
+              Öppna
               <ArrowRight data-icon="inline-end" />
             </Button>
           </Specimen>
@@ -436,16 +435,17 @@ function Fields() {
             <TextBox ops={ops} />
           </div>
         </Specimen>
-        <Specimen name="Drop-yta, tom och vald fil" where="Deworder" wide>
-          <div className="grid w-full gap-4 md:grid-cols-2">
-            <HtmlDropZone file={null} onFile={() => {}} />
-            <HtmlDropZone file={new File([""], "rapport.html")} onFile={() => {}} />
-          </div>
-        </Specimen>
-        <Specimen name="Drop-yta: tom, läser, klar, fel" where="PDF sida vid sida" wide>
+        <Specimen name="Drop-yta: tom, läser, klar, fel" where="Deworder, PDF sida vid sida, SVG-viewer" wide>
           <div className="grid w-full gap-4 md:grid-cols-2">
             {PDF_STATES.map((status, i) => (
-              <PdfDropZone key={i} side={i % 2 ? "b" : "a"} status={status && { ...status }} onFile={() => {}} />
+              <DropZone
+                key={i}
+                title={i % 2 ? "Komprimerad" : "Original"}
+                hint=".pdf"
+                accept=".pdf"
+                status={status && { ...status }}
+                onFile={() => {}}
+              />
             ))}
           </div>
         </Specimen>

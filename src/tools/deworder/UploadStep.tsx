@@ -1,12 +1,11 @@
-import { useState, type DragEvent } from "react";
-import { ArrowRight, FileCheck, FolderOpen } from "lucide-react";
-import { cn } from "cn";
+import { ArrowRight } from "lucide-react";
+import { DropZone } from "@/components/drop-zone";
+import { PASTE_CLASS, SourcePicker, type SourceMode } from "@/components/source-picker";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { SourceName, StepHeader } from "./DeworderApp";
 
-export type InputMode = "file" | "paste";
+export type InputMode = SourceMode;
 
 interface Props {
   mode: InputMode;
@@ -15,7 +14,8 @@ interface Props {
   onFileChange: (file: File | null) => void;
   paste: string;
   onPasteChange: (text: string) => void;
-  onContinue: () => void;
+  /** With a file, reads that one (state hasn't caught up yet). */
+  onContinue: (file?: File) => void;
 }
 
 export function UploadStep({ mode, onModeChange, file, onFileChange, paste, onPasteChange, onContinue }: Props) {
@@ -31,97 +31,47 @@ export function UploadStep({ mode, onModeChange, file, onFileChange, paste, onPa
           </span>
         )}
       </StepHeader>
-      <Tabs value={mode} onValueChange={(v) => onModeChange(v as InputMode)}>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <TabsList aria-label="Inmatningssätt">
-            <TabsTrigger value="file" className="px-3">
-              <span>
-                <code className="font-mono">.html</code>-fil
-              </span>
-            </TabsTrigger>
-            <TabsTrigger value="paste" className="px-3">
-              Klistra in
-            </TabsTrigger>
-          </TabsList>
-          <Button onClick={onContinue} disabled={!ready}>
-            Fortsätt
-            <ArrowRight data-icon="inline-end" />
-          </Button>
-        </div>
-        <TabsContent value="file" className="mt-2">
-          <DropZone file={file} onFile={onFileChange} />
-        </TabsContent>
-        <TabsContent value="paste" className="mt-2">
+      <SourcePicker
+        mode={mode}
+        onModeChange={onModeChange}
+        file={
+          <DropZone
+            title="Word-exporterad HTML"
+            hint=".html eller .htm"
+            accept=".html,.htm,text/html"
+            prefer={isHtmlFile}
+            status={file && { state: "ok", text: file.name }}
+            onFile={(f) => {
+              onFileChange(f);
+              onContinue(f);
+            }}
+            data-testid="drop-zone"
+          />
+        }
+        paste={
           <Textarea
             aria-label="HTML-kod"
             value={paste}
             onChange={(e) => onPasteChange(e.target.value)}
             spellCheck={false}
             placeholder="Klistra in HTML-kod här…"
-            className="min-h-40 font-mono text-xs"
+            className={PASTE_CLASS}
           />
-        </TabsContent>
-      </Tabs>
+        }
+        actionAt="bar"
+        action={
+          // A chosen file opens at once; the button opens pasted code, or a
+          // file kept from before when coming back to this step.
+          <Button onClick={() => onContinue()} disabled={!ready}>
+            Öppna
+            <ArrowRight data-icon="inline-end" />
+          </Button>
+        }
+      />
     </section>
   );
 }
 
 function isHtmlFile(file: File) {
   return file.type === "text/html" || /\.html?$/i.test(file.name || "");
-}
-
-export function DropZone({ file, onFile }: { file: File | null; onFile: (file: File) => void }) {
-  const [over, setOver] = useState(false);
-
-  const hover = (e: DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "copy";
-    setOver(true);
-  };
-  const leave = (e: DragEvent) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(false);
-  };
-  // An HTML file if one was dropped, else whatever came first.
-  const drop = (e: DragEvent) => {
-    e.preventDefault();
-    setOver(false);
-    const files = Array.from(e.dataTransfer.files);
-    const picked = files.find(isHtmlFile) ?? files[0];
-    if (picked) onFile(picked);
-  };
-
-  const Icon = file ? FileCheck : FolderOpen;
-  return (
-    <label
-      data-testid="drop-zone"
-      onDragEnter={hover}
-      onDragOver={hover}
-      onDragLeave={leave}
-      onDrop={drop}
-      className={cn(
-        "flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-6 text-center text-sm transition-colors",
-        "hover:border-primary/60 hover:bg-accent/50 has-focus-visible:border-ring has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
-        over && "border-primary bg-accent",
-        file && !over && "border-primary/60",
-      )}
-    >
-      <input
-        type="file"
-        accept=".html,.htm,text/html"
-        className="sr-only"
-        onChange={(e) => {
-          const picked = e.target.files?.[0];
-          if (picked) onFile(picked);
-        }}
-      />
-      <Icon aria-hidden="true" className={cn("size-8", file ? "text-primary" : "text-muted-foreground")} />
-      {file ? (
-        <span className="font-mono break-all">{file.name}</span>
-      ) : (
-        <span className="text-muted-foreground">
-          Dra och släpp eller <span className="text-primary underline underline-offset-4">klicka för att bläddra</span>
-        </span>
-      )}
-    </label>
-  );
 }

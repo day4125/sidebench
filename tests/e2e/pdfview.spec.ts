@@ -61,7 +61,7 @@ async function pick(page: Page, side: "a" | "b", file: Payload) {
 async function openBoth(page: Page, a: Payload, b: Payload) {
   await pick(page, "a", a);
   await pick(page, "b", b);
-  await page.getByRole("button", { name: "Öppna sida vid sida" }).click();
+  await page.getByRole("button", { name: "Öppna", exact: true }).click();
   await expect(page.getByRole("region", { name: "Granska sida vid sida" })).toBeVisible();
 }
 
@@ -104,7 +104,7 @@ test("picks the two files, refuses a non-PDF and opens the workspace", async ({ 
   // The broken PDF below: PDF.js's warning while it tries to repair it, and
   // the app's own log of the error.
   allowed.push(/^warning: Warning: Indexing all PDF objects$/, /^warning: \w+$/);
-  const open = app.getByRole("button", { name: "Öppna sida vid sida" });
+  const open = app.getByRole("button", { name: "Öppna", exact: true });
   await expect(open).toBeDisabled();
   await pick(app, "a", pdfFile("orig.pdf", "A", pages(3)));
   await expect(status(app, "a")).toHaveText("orig.pdf – 3 sidor");
@@ -218,7 +218,7 @@ test("the workspace opens under the tool header and goes fullscreen and back", a
   await app.keyboard.press("F");
   await expect(region).toHaveAttribute("data-fullscreen", "false");
   await app.keyboard.press("Escape");
-  await expect(app.getByRole("button", { name: "Öppna sida vid sida" })).toBeVisible();
+  await expect(app.getByRole("button", { name: "Öppna", exact: true })).toBeVisible();
 });
 
 test("paging: buttons, page field and keys, one pair at a time", async ({ app }) => {
@@ -303,10 +303,10 @@ test("stars: flag, list, jump, copy, clear, and kept until new files are picked"
   await expect(menu).toBeHidden();
   await expect(app.getByRole("region", { name: "Granska sida vid sida" })).toBeVisible();
   await app.keyboard.press("Escape");
-  await expect(app.getByRole("button", { name: "Öppna sida vid sida" })).toBeVisible();
+  await expect(app.getByRole("button", { name: "Öppna", exact: true })).toBeVisible();
 
   // Reopening keeps the flags; picking a new file starts over.
-  await app.getByRole("button", { name: "Öppna sida vid sida" }).click();
+  await app.getByRole("button", { name: "Öppna", exact: true }).click();
   await expect(toggle).toHaveAccessibleName("Flaggade sidor: 3");
   await toggle.click();
   await menu.getByRole("button", { name: "Rensa alla" }).click();
@@ -317,7 +317,7 @@ test("stars: flag, list, jump, copy, clear, and kept until new files are picked"
   await expect(toggle).toHaveAccessibleName("Flaggade sidor: 1");
   await app.getByRole("button", { name: "Tillbaka" }).click();
   await pick(app, "b", pdfFile("b2.pdf", "B", pages(5)));
-  await app.getByRole("button", { name: "Öppna sida vid sida" }).click();
+  await app.getByRole("button", { name: "Öppna", exact: true }).click();
   await expect(toggle).toHaveAccessibleName("Flaggade sidor: 0");
 });
 
@@ -458,7 +458,7 @@ test("KB per page of the compressed file, against the 300 KB target", async ({ a
   const heavy = pdfFile("tung.pdf", "B", pages(1));
   heavy.buffer = Buffer.concat([heavy.buffer, Buffer.from(`%${" ".repeat(700 * 1024)}\n`)]);
   await pick(app, "b", heavy);
-  await app.getByRole("button", { name: "Öppna sida vid sida" }).click();
+  await app.getByRole("button", { name: "Öppna", exact: true }).click();
   await expect(kbpp).toHaveText(/^7\d\d KB\/sida$/);
   await expect(kbpp).toHaveAttribute("data-over", "true");
 });

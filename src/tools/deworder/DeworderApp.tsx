@@ -69,14 +69,15 @@ export function DeworderApp() {
     setExpanded(false);
   }
 
-  async function toMapping() {
+  async function toMapping(picked?: File) {
     try {
       let filename: string;
       let raw: string;
-      if (mode === "file") {
-        if (!file) throw new Error("No file selected");
-        filename = file.name || "input.html";
-        raw = decodeHtmlBytes(await file.arrayBuffer());
+      const chosen = picked ?? file;
+      if (picked || mode === "file") {
+        if (!chosen) throw new Error("No file selected");
+        filename = chosen.name || "input.html";
+        raw = decodeHtmlBytes(await chosen.arrayBuffer());
       } else {
         filename = "pasted.html";
         raw = paste;
@@ -126,7 +127,7 @@ export function DeworderApp() {
 
   return (
     <AppShell tool="deworder">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
+      <div className="mx-auto flex max-w-tool flex-col gap-6">
         <StepIndicator step={step} onBack={go} />
         {error && (
           <Alert variant="destructive">
@@ -141,7 +142,7 @@ export function DeworderApp() {
             onFileChange={setFile}
             paste={paste}
             onPasteChange={setPaste}
-            onContinue={toMapping}
+            onContinue={(f) => void toMapping(f)}
           />
         )}
         {step === 2 && source && form && (

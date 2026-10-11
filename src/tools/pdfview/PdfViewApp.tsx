@@ -7,13 +7,14 @@
 // The PDFs are read with the File API and held in memory only (INTENT.md).
 // The stars are in-memory too; the only thing that leaves the page is the
 // star list, through an explicit copy.
-import { useEffect, useRef, useState, type DragEvent } from "react";
-import { ArrowRight, FileCheck, FileX, FolderOpen, LoaderCircle } from "lucide-react";
-import { cn } from "cn";
+import { useEffect, useRef, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { AppShell } from "@/app/AppShell";
+import { DropZone } from "@/components/drop-zone";
+import { SourceFooter } from "@/components/source-picker";
 import { Button } from "@/components/ui/button";
 import type { PDFDocumentLoadingTask } from "pdfjs-dist";
-import { SIDE_NAME, firstFile, hasFiles, isPdf, type PdfFile, type Side, type Toast } from "./files";
+import { SIDE_NAME, isPdf, type PdfFile, type Side, type Toast } from "./files";
 import { openPdf } from "./pdfjs";
 import { Workspace } from "./Workspace";
 
@@ -136,99 +137,35 @@ export function PdfViewApp() {
           onToast={showToast}
         />
       ) : (
-        <div className="mx-auto flex max-w-4xl flex-col gap-6">
+        <div className="mx-auto flex max-w-tool flex-col gap-3">
           <p className="text-sm text-muted-foreground">
             Välj originalet och den komprimerade versionen. Båda visas sida vid sida, en sida i taget, och bläddras tillsammans.
           </p>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2">
             {(["a", "b"] as const).map((side) => (
               <DropZone
                 key={side}
-                side={side}
+                title={SIDE_NAME[side]}
+                hint=".pdf"
+                accept="application/pdf,.pdf"
+                prefer={isPdf}
                 status={status[side]}
                 onFile={(file) => void handleFile(side, file)}
+                data-testid={`drop-${side}`}
+                statusTestId={`status-${side}`}
               />
             ))}
           </div>
-          <div className="flex justify-end">
-            <Button size="lg" disabled={!(files.a && files.b)} onClick={() => setOpen(true)}>
-              Öppna sida vid sida
-              <ArrowRight data-icon="inline-end" />
-            </Button>
-          </div>
+          <SourceFooter
+            action={
+              <Button disabled={!(files.a && files.b)} onClick={() => setOpen(true)}>
+                Öppna
+                <ArrowRight data-icon="inline-end" />
+              </Button>
+            }
+          />
         </div>
       )}
     </AppShell>
-  );
-}
-
-interface ZoneProps {
-  side: Side;
-  status: PickerStatus | null;
-  onFile: (file: File | null) => void;
-}
-
-export function DropZone({ side, status, onFile }: ZoneProps) {
-  const [over, setOver] = useState(false);
-
-  const hover = (e: DragEvent) => {
-    if (!hasFiles(e)) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "copy";
-    setOver(true);
-  };
-  const leave = (e: DragEvent) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(false);
-  };
-  const drop = (e: DragEvent) => {
-    e.preventDefault();
-    setOver(false);
-    onFile(firstFile(e));
-  };
-
-  const state = status?.state;
-  const Icon = state === "ok" ? FileCheck : state === "error" ? FileX : state === "loading" ? LoaderCircle : FolderOpen;
-  return (
-    <label
-      data-testid={`drop-${side}`}
-      onDragEnter={hover}
-      onDragOver={hover}
-      onDragLeave={leave}
-      onDrop={drop}
-      className={cn(
-        "flex min-h-48 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-6 text-center text-sm transition-colors",
-        "hover:border-primary/60 hover:bg-accent/50 has-focus-visible:border-ring has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
-        over && "border-primary bg-accent",
-        state === "ok" && !over && "border-primary/60",
-      )}
-    >
-      <span className="text-base font-medium">{SIDE_NAME[side]}</span>
-      <input
-        type="file"
-        accept="application/pdf,.pdf"
-        className="sr-only"
-        onChange={(e) => {
-          onFile(e.target.files?.[0] ?? null);
-          e.target.value = "";
-        }}
-      />
-      <Icon
-        aria-hidden="true"
-        className={cn(
-          "size-8",
-          state === "ok" ? "text-primary" : state === "error" ? "text-destructive" : "text-muted-foreground",
-          state === "loading" && "animate-spin",
-        )}
-      />
-      <span aria-live="polite" data-testid={`status-${side}`} className={cn(state === "error" && "text-destructive", "break-all")}>
-        {status ? (
-          status.text
-        ) : (
-          <span className="text-muted-foreground">
-            Dra och släpp eller <span className="text-primary underline underline-offset-4">klicka för att bläddra</span>
-          </span>
-        )}
-      </span>
-    </label>
   );
 }

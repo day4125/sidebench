@@ -10,9 +10,11 @@
 // Every edit is a new version of the text, so all of them can be undone.
 // The file lives in memory only (INTENT.md).
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { FileUp, Redo2, Scissors, Trash2, Undo2, X, Download, Copy, LoaderCircle } from "lucide-react";
+import { ArrowRight, FileUp, Redo2, Scissors, Trash2, Undo2, X, Download, Copy, LoaderCircle } from "lucide-react";
 import { cn } from "cn";
 import { AppShell } from "@/app/AppShell";
+import { DropZone } from "@/components/drop-zone";
+import { PASTE_CLASS, SourcePicker, type SourceMode } from "@/components/source-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -587,59 +589,48 @@ function Tip({ label, children }: { label: string; children: React.ReactElement 
 function Empty({
   busy, error, paste, onPaste, onOpenPaste, onFile,
 }: { busy: string | null; error: string | null; paste: string; onPaste: (s: string) => void; onOpenPaste: () => void; onFile: (f: File) => void }) {
+  const [mode, setMode] = useState<SourceMode>("file");
   return (
-    <div className="svg-scroll flex min-h-0 flex-1 overflow-y-auto">
-      <div className="m-auto grid w-full max-w-3xl gap-6 p-4 md:p-8">
-        <label
-          data-testid="drop-zone"
-          className="group flex min-h-64 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-8 text-center transition-colors hover:border-primary/60 hover:bg-accent/40 has-focus-visible:border-ring has-focus-visible:ring-3 has-focus-visible:ring-ring/50"
-        >
-          <input
-            type="file"
-            accept=".svg,.svgz,image/svg+xml"
-            className="sr-only"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) onFile(f);
-              e.target.value = "";
-            }}
-          />
-          {busy ? (
-            <LoaderCircle aria-hidden="true" className="size-9 animate-spin text-primary" />
-          ) : (
-            <FileUp aria-hidden="true" className="size-9 text-muted-foreground transition-colors group-hover:text-primary" />
-          )}
-          <span className="text-lg font-medium tracking-tight">{busy ? "Läser in…" : "Släpp en SVG här"}</span>
-          <span className="text-sm text-muted-foreground">
-            eller <span className="text-primary underline underline-offset-4">välj en fil</span>. .svg eller .svgz, upp till {formatBytes(MAX_BYTES)}.
-          </span>
-        </label>
-
+    <div className="svg-scroll flex min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
+      <div className="mx-auto grid w-full max-w-tool content-start gap-3">
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-
-        <div className="grid gap-2">
-          <label htmlFor="svg-paste" className="text-sm font-medium">
-            Eller klistra in koden
-          </label>
-          <Textarea
-            id="svg-paste"
-            value={paste}
-            onChange={(e) => onPaste(e.target.value)}
-            spellCheck={false}
-            placeholder={'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">…</svg>'}
-            className="min-h-32 font-mono text-xs"
-          />
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-muted-foreground">Ctrl+V var som helst på sidan öppnar också kod eller en kopierad fil.</p>
-            <Button onClick={onOpenPaste} disabled={!paste.trim() || !!busy}>
-              Öppna koden
+        <SourcePicker
+          mode={mode}
+          onModeChange={setMode}
+          file={
+            <DropZone
+              title="SVG-fil"
+              hint={`.svg eller .svgz, upp till ${formatBytes(MAX_BYTES)}`}
+              accept=".svg,.svgz,image/svg+xml"
+              status={busy ? { state: "loading", text: "Läser in…" } : null}
+              onFile={onFile}
+              over={false}
+              data-testid="drop-zone"
+            />
+          }
+          paste={
+            <Textarea
+              aria-label="SVG-kod"
+              value={paste}
+              onChange={(e) => onPaste(e.target.value)}
+              spellCheck={false}
+              placeholder={'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">…</svg>'}
+              className={PASTE_CLASS}
+            />
+          }
+          hint="Ctrl+V var som helst på sidan öppnar också kod eller en kopierad fil."
+          action={
+            // A file opens as soon as it's chosen, so in that tab the button stays off.
+            <Button onClick={onOpenPaste} disabled={mode === "file" || !paste.trim() || !!busy}>
+              Öppna
+              <ArrowRight data-icon="inline-end" />
             </Button>
-          </div>
-        </div>
+          }
+        />
       </div>
     </div>
   );

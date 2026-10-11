@@ -468,7 +468,7 @@ export function CharsApp() {
           stuck && "border-border shadow-[0_8px_16px_-12px_rgb(0_0_0/0.25)] md:pt-4",
         )}
       >
-        <div className="mx-auto grid max-w-6xl gap-3">
+        <div className="mx-auto grid max-w-tool gap-3">
           <DetailsBand {...details} />
           <div className="flex items-center gap-2">
             <div className="relative min-w-0 flex-1">
@@ -517,7 +517,7 @@ export function CharsApp() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-tool">
         <div className="mt-3 grid gap-6">
           {flat.length === 0 && (
             <div className="rounded-xl border border-dashed px-6 py-12 text-center">

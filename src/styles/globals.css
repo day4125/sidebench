@@ -21,6 +21,8 @@
 /* Below this the sidebar is a strip across the top (useIsMobile's NAV_BREAKPOINT). */
 @theme {
     --breakpoint-nav: 500px;
+    /* The one content column for every tool page that doesn't fill the window (max-w-tool). */
+    --container-tool: 72rem;
 }
 
 @theme inline {

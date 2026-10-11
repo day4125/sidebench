@@ -72,8 +72,9 @@ test("opens a dropped file and shows its size against the limit", async ({ app }
 });
 
 test("opens pasted code", async ({ app }) => {
-  await app.getByLabel("Eller klistra in koden").fill(SMALL);
-  await app.getByRole("button", { name: "Öppna koden" }).click();
+  await app.getByRole("tab", { name: "Klistra in" }).click();
+  await app.getByLabel("SVG-kod").fill(SMALL);
+  await app.getByRole("button", { name: "Öppna", exact: true }).click();
   await expect(app.getByTestId("svg-stage")).toBeVisible();
   await expect(strip(app)).toContainText("inklistrad.svg");
 });
@@ -85,8 +86,9 @@ base("refuses code that isn't SVG", async ({ page, baseURL }) => {
   const offending = watchNetwork(page, new URL(baseURL!).origin);
   const errors = watchConsole(page);
   await page.goto("svg.html");
-  await page.getByLabel("Eller klistra in koden").fill("<svg><rect></svg>");
-  await page.getByRole("button", { name: "Öppna koden" }).click();
+  await page.getByRole("tab", { name: "Klistra in" }).click();
+  await page.getByLabel("SVG-kod").fill("<svg><rect></svg>");
+  await page.getByRole("button", { name: "Öppna", exact: true }).click();
   await expect(page.getByText(/Koden är inte giltig SVG \(fel på rad 1\)/)).toBeVisible();
   expect(offending).toEqual([]);
   expect(errors.filter((e) => !/Applying inline style violates/.test(e))).toEqual([]);

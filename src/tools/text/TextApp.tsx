@@ -745,7 +745,7 @@ export function TextApp() {
   const ops = useTextOps();
   return (
     <AppShell tool="text">
-      <div className="mx-auto flex max-w-3xl flex-col gap-3">
+      <div className="mx-auto flex max-w-tool flex-col gap-3">
         <TextBox ops={ops} />
         <CleanButton ops={ops} />
       </div>

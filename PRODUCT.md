@@ -76,8 +76,9 @@ the rule every change is checked against.
 - **Stack:** Vite, React, TypeScript, Tailwind v4, shadcn/ui (added one
   component at a time), lucide icons.
 - **Open:** the visual direction. Current tokens are a placeholder (port
-  plan step 7); shared patterns across tools (step indicators, drop zones,
-  feedback, errors) are still to be decided. PWA/offline install is a later
+  plan step 7); shared patterns across tools (step indicators, feedback,
+  errors) are still to be decided. Page width and upload screens are
+  settled (`docs/DECISIONS.md`). PWA/offline install is a later
   maybe.
 
 ## Brand Commitments

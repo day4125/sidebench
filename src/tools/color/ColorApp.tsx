@@ -521,7 +521,7 @@ export function ColorApp() {
 
   return (
     <AppShell tool="color">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-tool">
         <div className="grid gap-6 md:grid-cols-[1fr_13rem_1fr] lg:grid-cols-[1fr_16rem_1fr]">
           <Well side="text" color={text} shown={shownText} onColor={setText} copied={copied} onCopy={copy} autoFocus />
           <div className="order-last md:order-none">

@@ -85,8 +85,8 @@ const frame = (page: Page, which: "före" | "efter") => page.frameLocator(`ifram
 
 async function upload(page: Page, name: string, text: string) {
   allowStylesOf(text);
+  // A chosen file opens straight away, without the Öppna button.
   await page.locator('input[type="file"][accept^=".html"]').setInputFiles(htmlFile(name, text));
-  await page.getByRole("button", { name: "Fortsätt" }).click();
   await expect(step(page)).toHaveText(/Mappa/);
 }
 
@@ -94,7 +94,7 @@ async function pasteHtml(page: Page, text: string) {
   allowStylesOf(text);
   await page.getByRole("tab", { name: "Klistra in" }).click();
   await page.getByRole("textbox", { name: "HTML-kod" }).fill(text);
-  await page.getByRole("button", { name: "Fortsätt" }).click();
+  await page.getByRole("button", { name: "Öppna", exact: true }).click();
   await expect(step(page)).toHaveText(/Mappa/);
 }
 
@@ -119,7 +119,7 @@ async function downloaded(page: Page, click: () => Promise<void>): Promise<[Down
 }
 
 test("file upload: output matches the golden file, as download, copy and source", async ({ app }) => {
-  await expect(app.getByRole("button", { name: "Fortsätt" })).toBeDisabled();
+  await expect(app.getByRole("button", { name: "Öppna", exact: true })).toBeDisabled();
   await upload(app, "verify-fixture.html", fixture);
   await expect(meta(app)).toContainText("källa: verify-fixture.html");
 
@@ -139,9 +139,9 @@ test("file upload: output matches the golden file, as download, copy and source"
 
 test("paste: output matches the golden file", async ({ app }) => {
   await app.getByRole("tab", { name: "Klistra in" }).click();
-  await expect(app.getByRole("button", { name: "Fortsätt" })).toBeDisabled();
+  await expect(app.getByRole("button", { name: "Öppna", exact: true })).toBeDisabled();
   await app.getByRole("textbox", { name: "HTML-kod" }).fill("   ");
-  await expect(app.getByRole("button", { name: "Fortsätt" })).toBeDisabled();
+  await expect(app.getByRole("button", { name: "Öppna", exact: true })).toBeDisabled();
 
   await pasteHtml(app, fixture);
   await expect(meta(app)).toContainText("källa: pasted.html");
@@ -162,8 +162,6 @@ test("drag and drop picks the HTML file among those dropped", async ({ app }) =>
       zone.dispatchEvent(new DragEvent(type, { dataTransfer: dt, bubbles: true, cancelable: true }));
     }
   }, bytes);
-  await expect(app.getByTestId("drop-zone")).toContainText("dropped.htm");
-  await app.getByRole("button", { name: "Fortsätt" }).click();
   await expect(meta(app)).toContainText("källa: dropped.htm");
   await preview(app);
   await expect(app.getByTestId("source")).toHaveText(golden, { useInnerText: false });
@@ -208,14 +206,14 @@ test("mapping: edit, collapse, options, reset, back and forth", async ({ app }) 
   // Back to step 1 keeps the file; continuing re-reads it.
   await app.getByRole("navigation", { name: "Steg" }).getByRole("button", { name: "Ladda upp" }).click();
   await expect(app.getByTestId("drop-zone")).toContainText("verify-fixture.html");
-  await app.getByRole("button", { name: "Fortsätt" }).click();
+  await app.getByRole("button", { name: "Öppna", exact: true }).click();
   await preview(app);
   await expect(source).toHaveText(golden, { useInnerText: false });
 
   // Starting over clears it.
   await app.getByRole("button", { name: "Ladda upp annan fil" }).click();
   await expect(step(app)).toHaveText(/Ladda upp/);
-  await expect(app.getByRole("button", { name: "Fortsätt" })).toBeDisabled();
+  await expect(app.getByRole("button", { name: "Öppna", exact: true })).toBeDisabled();
 });
 
 test("config.json: a legacy file loads unchanged, and the download keeps the format", async ({ app }) => {
