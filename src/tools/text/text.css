@@ -1,0 +1,60 @@
+/* Textmanipulator's feedback motion. Plain CSS outside Tailwind's layers,
+   so these win over utility classes on the same element. */
+
+/* The whole box turns green while "Kopierad!" shows: copy takes the whole
+   text. The box's own transition fades it in and out. */
+[data-text-box][data-copied] {
+  border-color: color-mix(in oklch, var(--success-foreground) 60%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--success-foreground) 18%, transparent);
+}
+
+/* What the last operation wrote: tinted, held a moment, faded out. */
+:root {
+  --text-changed: color-mix(in oklch, var(--primary) 20%, transparent);
+}
+.dark {
+  --text-changed: color-mix(in oklch, var(--primary) 38%, transparent);
+}
+[data-changes] {
+  animation: text-changes 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+[data-changes] mark {
+  color: transparent;
+  background: var(--text-changed);
+  border-radius: 3px;
+  box-shadow: 0 0 0 1.5px var(--text-changed);
+}
+[data-changes] [data-gone] {
+  position: absolute;
+  left: -1px;
+  top: 0.2em;
+  width: 2px;
+  height: 1.15em;
+  border-radius: 1px;
+  background: var(--primary);
+}
+@keyframes text-changes {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  35% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* A button's new face slides in. Only into the copy states, so nothing
+   moves on load or when an edit resets the buttons. */
+[data-face-state]:not([data-face-state="run"]) [data-face] {
+  animation: text-face 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+@keyframes text-face {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-face-state] [data-face] {
+    animation: none;
+  }
+}

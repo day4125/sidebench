@@ -17,14 +17,20 @@
 //
 // The copy flow is legacy's: an operation rewrites the text and its button
 // turns into "Kopiera" (one button at a time); clicking it copies the text
-// and shows "Kopierad!" for a moment. Any edit to the text resets every
-// button. If the clipboard fails, the text is selected instead.
+// and shows "Kopierad!" for a moment, while the whole box turns green (copy
+// always takes the whole text). A button's new face slides in. Any edit to
+// the text resets every button. If the clipboard fails, the text is
+// selected instead.
 //
 // An operation works on the selection if there is one, else on the whole
 // text. Either way it goes in through the browser's own editing
 // (execCommand insertText), so Ctrl+Z undoes it like typing. Copy always
 // takes the whole text.
-import { Fragment, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type RefObject } from "react";
+//
+// What an operation wrote lights up for a moment (changes.ts), in a layer
+// behind the text box like the hidden-character marks, so a guess shows at
+// once. Any edit clears it.
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type RefObject } from "react";
 import {
   Ampersand,
   AtSign,
@@ -58,6 +64,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useFlash } from "@/hooks/use-flash";
 import { HIDDEN, tallyHidden } from "@/lib/hidden-chars";
 import { readSetting, writeSetting } from "@/lib/storage";
+import { changedRuns, type Run } from "./changes";
+import "./text.css";
 import { apply, type Op } from "./engine";
 import { SubDigits, SubLetters, SupDigits, SupLetters } from "./icons";
 import { cleanWith, DEFAULT_RECIPE, describe, type Recipe, type Report } from "./recipe";
@@ -175,6 +183,14 @@ export function useTextOps() {
   const input = useRef<HTMLTextAreaElement>(null);
   // Set while an operation writes, so edit() doesn't reset the copy state.
   const applying = useRef(false);
+  // What the last operation wrote, lit up briefly. `id` restarts the fade.
+  const [change, setChange] = useState<{ id: number; runs: Run[] } | null>(null);
+  const changes = useRef(0);
+  useEffect(() => {
+    if (!change) return;
+    const t = window.setTimeout(() => setChange(null), 1500);
+    return () => window.clearTimeout(t);
+  }, [change]);
 
   /** Rewrite the selection, or the whole text, as one undoable edit.
    * `fn`, if given, does the rewriting instead of the named op. */
@@ -194,7 +210,9 @@ export function useTextOps() {
     applying.current = true;
     const done = document.execCommand("insertText", false, result);
     applying.current = false;
-    if (!done) setText(before.slice(0, from) + result + before.slice(to));
+    const after = before.slice(0, from) + result + before.slice(to);
+    if (!done) setText(after);
+    if (after !== before) setChange({ id: ++changes.current, runs: changedRuns(before, after) });
     // Keep a selection on what changed; after a whole-text run, the caret
     // goes to the start and the view stays where it was.
     const end = whole ? 0 : from + result.length;
@@ -226,6 +244,7 @@ export function useTextOps() {
     setText(value);
     if (applying.current) return;
     reset();
+    setChange(null);
   }
 
   /** Every button back to its own face. */
@@ -277,6 +296,7 @@ export function useTextOps() {
     setRecipe,
     report,
     clean,
+    change,
   };
 }
 
@@ -287,7 +307,9 @@ function face(ops: Ops, def: OpDef) {
   const copying = ops.copyOp === def.op;
   const Icon = copying ? (ops.copied ? Check : Copy) : def.icon;
   const label = copying ? (ops.copied ? "Kopierad!" : "Kopiera") : def.label;
-  return { copying, Icon, label };
+  /** Which face is showing; keys the slide-in (text.css). */
+  const state = copying ? (ops.copied ? "copied" : "copy") : "run";
+  return { copying, Icon, label, state };
 }
 
 // ---------------------------------------------------------------------------
@@ -398,7 +420,7 @@ function ReportLine({ report }: { report: Report }) {
 /** The lead action, full width, with its recipe in a menu at the right
  * end and the last run's report under it. Explained in the legend. */
 export function CleanButton({ ops }: { ops: Ops }) {
-  const { copying, Icon, label } = face(ops, { op: "clean", label: "Rensa text", icon: Check });
+  const { copying, Icon, label, state } = face(ops, { op: "clean", label: "Rensa text", icon: Check });
   // Kopiera: primary outline (dark: overrides the outline variant's gray
   // border). Kopierad!: a soft green tint, so the copy reads as done.
   const outline = ops.copied
@@ -411,10 +433,13 @@ export function CleanButton({ ops }: { ops: Ops }) {
         <Button
           variant={copying ? "outline" : "default"}
           onClick={ops.clean}
+          data-face-state={state}
           className={cn("h-11 flex-1 rounded-r-none text-[0.9375rem]", transition, copying && cn(outline, "border-r-0"))}
         >
-          {copying && <Icon data-icon="inline-start" />}
-          {label}
+          <span key={state} data-face="" className="inline-flex items-center gap-1.5">
+            {copying && <Icon data-icon="inline-start" />}
+            {label}
+          </span>
         </Button>
         <Popover>
           <PopoverTrigger asChild>
@@ -442,18 +467,19 @@ export function CleanButton({ ops }: { ops: Ops }) {
 
 /** One square in a joined group. Named by aria-label only. */
 function Square({ ops, def }: { ops: Ops; def: OpDef }) {
-  const { copying, Icon, label } = face(ops, def);
+  const { copying, Icon, label, state } = face(ops, def);
   return (
     <button
       type="button"
       aria-label={label}
+      data-face-state={state}
       onClick={() => void ops.run(def.op)}
       className={cn(
         "relative flex h-8 w-[1.875rem] items-center justify-center text-foreground/75 sm:w-9 outline-none transition-colors first:rounded-l-[calc(var(--radius-md)-1px)] last:rounded-r-[calc(var(--radius-md)-1px)] hover:bg-muted hover:text-foreground focus-visible:z-10 focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px",
         copying && "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary",
       )}
     >
-      <Icon className="size-[1.125rem]" />
+      <Icon key={state} data-face="" className="size-[1.125rem]" />
     </button>
   );
 }
@@ -505,7 +531,8 @@ function Legend({ ops }: { ops: Ops }) {
 
 const count = (n: number) => n.toLocaleString("sv-SE");
 
-/** Characters, words and lines of the selection, or of the whole text. */
+/** Characters, words and lines of the selection, or of the whole text.
+ * The figures stand out from their units. */
 function Count({ ops }: { ops: Ops }) {
   const [from, to] = ops.sel;
   const selected = to > from;
@@ -514,14 +541,16 @@ function Count({ ops }: { ops: Ops }) {
   const chars = [...part].length;
   const words = part.match(/\S+/g)?.length ?? 0;
   const lines = part.split("\n").length;
+  const figure = (n: number, unit: string, className?: string) => (
+    <span className={className}>
+      <span className="font-medium text-foreground/80">{count(n)}</span> {unit}
+    </span>
+  );
   return (
-    <p className="mr-1.5 hidden self-center text-xs whitespace-nowrap text-muted-foreground tabular-nums sm:block">
-      {selected && "Markerat: "}
-      {count(chars)} tecken · {count(words)} ord
-      <span className="hidden md:inline">
-        {" "}
-        · {count(lines)} {lines === 1 ? "rad" : "rader"}
-      </span>
+    <p className="mr-2 hidden items-baseline gap-2.5 self-center text-xs whitespace-nowrap text-muted-foreground tabular-nums sm:flex">
+      {selected && <span className="rounded-sm bg-primary/10 px-1.5 py-px font-medium text-primary">Markerat</span>}{" "}
+      {figure(chars, "tecken")} {figure(words, "ord")}{" "}
+      {figure(lines, lines === 1 ? "rad" : "rader", "hidden md:inline")}
     </p>
   );
 }
@@ -658,19 +687,23 @@ function LineEnd() {
   );
 }
 
-function Marks({ text, input }: { text: string; input: RefObject<HTMLTextAreaElement | null> }) {
+/** A layer behind the text box, laid out like it. */
+const layerCls =
+  "pointer-events-none absolute inset-0 overflow-hidden p-4 text-base break-words whitespace-pre-wrap text-transparent select-none [scrollbar-gutter:stable]";
+
+/** Follow the text box's scroll, also after an edit changes its height. */
+function useFollowScroll(input: RefObject<HTMLTextAreaElement | null>) {
   const layer = useRef<HTMLDivElement>(null);
-  // Follow the text box's scroll, also after an edit changes its height.
   useLayoutEffect(() => {
     if (layer.current && input.current) layer.current.scrollTop = input.current.scrollTop;
   });
+  return layer;
+}
+
+function Marks({ text, input }: { text: string; input: RefObject<HTMLTextAreaElement | null> }) {
+  const layer = useFollowScroll(input);
   return (
-    <div
-      ref={layer}
-      data-marks=""
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 overflow-hidden p-4 text-base break-words whitespace-pre-wrap text-transparent select-none [scrollbar-gutter:stable]"
-    >
+    <div ref={layer} data-marks="" data-layer="" aria-hidden="true" className={layerCls}>
       {text.split(MARKED).map((piece, i) =>
         piece === "\n" ? (
           <Fragment key={i}>
@@ -689,14 +722,41 @@ function Marks({ text, input }: { text: string; input: RefObject<HTMLTextAreaEle
   );
 }
 
+/** What the last operation wrote, tinted, fading out (text.css). A removal
+ * with nothing in its place gets a thin bar. */
+function Changes({ runs, input }: { runs: Run[]; input: RefObject<HTMLTextAreaElement | null> }) {
+  const layer = useFollowScroll(input);
+  return (
+    <div ref={layer} data-changes="" data-layer="" aria-hidden="true" className={layerCls}>
+      {runs.map((r, i) =>
+        r.kind === "same" ? (
+          r.text
+        ) : r.kind === "new" ? (
+          <mark key={i}>{r.text}</mark>
+        ) : (
+          <span key={i} className="relative">
+            <span data-gone="" />
+          </span>
+        ),
+      )}
+      {" "}
+    </div>
+  );
+}
+
 /** The text field with the toolbar of operations along its bottom edge. */
 export function TextBox({ ops }: { ops: Ops }) {
   return (
-    <div className="rounded-xl border bg-card shadow-xs focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
+    <div
+      data-text-box=""
+      data-copied={ops.copied || undefined}
+      className="rounded-xl border bg-card shadow-xs transition-[border-color,box-shadow] duration-300 ease-out focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30"
+    >
       <label htmlFor="text-input" className="sr-only">
         Text
       </label>
       <div className="relative">
+        {ops.change && <Changes key={ops.change.id} runs={ops.change.runs} input={ops.input} />}
         {ops.marks && <Marks text={ops.text} input={ops.input} />}
         <Textarea
           id="text-input"
@@ -705,15 +765,14 @@ export function TextBox({ ops }: { ops: Ops }) {
           onChange={(e) => ops.edit(e.target.value)}
           onSelect={(e) => ops.select(e.currentTarget)}
           onScroll={(e) => {
-            const layer = e.currentTarget.parentElement?.querySelector<HTMLElement>("[data-marks]");
-            if (layer) layer.scrollTop = e.currentTarget.scrollTop;
+            const layers = e.currentTarget.parentElement?.querySelectorAll<HTMLElement>("[data-layer]") ?? [];
+            for (const layer of layers) layer.scrollTop = e.currentTarget.scrollTop;
           }}
           spellCheck={false}
           placeholder="Klistra in text här..."
-          className={cn(
-            "relative field-sizing-fixed min-h-72 resize-none rounded-none rounded-t-xl border-0 bg-transparent p-4 shadow-none focus-visible:ring-0 md:text-base dark:bg-transparent",
-            ops.marks && "[scrollbar-gutter:stable]",
-          )}
+          // The gutter is always kept, so a layer appearing behind the text
+          // never changes where it wraps.
+          className="relative field-sizing-fixed min-h-72 resize-none rounded-none rounded-t-xl border-0 bg-transparent p-4 shadow-none [scrollbar-gutter:stable] focus-visible:ring-0 md:text-base dark:bg-transparent"
         />
       </div>
       <div

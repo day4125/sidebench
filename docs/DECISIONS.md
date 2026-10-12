@@ -13,8 +13,9 @@ Textmanipulator (2026-10-11), with three directions: A, the surfaces the
 browser draws (caret, selection, scrollbar, focus in the accent, the count
 as figures, Ctrl+Enter); B, depth (a dotted bench behind the page, the box
 as a sheet, the toolbar as a tray of keys); C, motion that reports what
-happened. The tile is the one piece shipped so far; the other parts liked
-are in TODO.md under Textmanipulator. Dropped: A's caret, selection and
+happened. Shipped from it as well, in Textmanipulator: C's highlight of
+what an operation wrote, the green box while "Kopierad!" shows and the
+sliding button faces, and A's count with the figures set apart. Dropped: A's caret, selection and
 focus styling and the Ctrl+Enter hint, B's dotted background, C's
 character-difference badge and self-drawing check. Something to set the
 header off from the body was also tried, none kept: a ruler along its

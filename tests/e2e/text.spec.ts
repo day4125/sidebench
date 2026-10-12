@@ -224,10 +224,10 @@ test("the toolbar counts characters, words and lines, or the selection", async (
   const bar = app.getByRole("group", { name: "Textverktyg" });
   await expect(bar).not.toContainText("tecken");
   await input(app).fill("Två ord\noch en rad till");
-  await expect(bar).toContainText("23 tecken · 6 ord · 2 rader");
+  await expect(bar).toContainText("23 tecken 6 ord 2 rader");
   await selectRange(app, 0, 7);
   await input(app).press("Shift+ArrowLeft");
-  await expect(bar).toContainText("Markerat: 6 tecken · 2 ord · 1 rad");
+  await expect(bar).toContainText("Markerat 6 tecken 2 ord 1 rad");
 });
 
 test("hidden characters are drawn in a layer that matches the text box", async ({ app }) => {
