@@ -22,8 +22,11 @@ export function AppShell({ tool, fill, children }: { tool?: string; fill?: boole
         <AppSidebar active={tool} />
         <SidebarInset className={cn(fill && "min-h-0 min-w-0")}>
           {current && Icon && (
-            <header className="flex min-h-14 shrink-0 items-center gap-2 border-b px-4 py-2">
-              <Icon aria-hidden="true" className="size-4 shrink-0 text-primary" />
+            <header className="flex min-h-14 shrink-0 items-center gap-2.5 border-b px-4 py-2">
+              {/* The tool's icon on a tinted tile, echoing the brand mark's. */}
+              <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/11">
+                <Icon className="size-4 text-primary" />
+              </span>
               <div className="flex min-w-0 flex-wrap items-baseline gap-x-3">
                 <h1 className="font-semibold tracking-tight">{current.name}</h1>
                 <p className="truncate text-sm text-muted-foreground">{current.tagline}</p>

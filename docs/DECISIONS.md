@@ -4,6 +4,23 @@ Settled choices and why, newest first. Add one when a question is decided;
 if a later decision reverses one, say so in the new entry rather than
 editing the old one. The backlog is in [TODO.md](TODO.md).
 
+## 2026-10-12 · Tool icon on a tinted tile in the header
+
+Every tool page's header shows the tool's icon on a small cobalt-tinted
+tile (`AppShell.tsx`), echoing the brand mark's tile, where it used to be
+a bare icon. It came out of a prototype of subtle lifts on
+Textmanipulator (2026-10-11), with three directions: A, the surfaces the
+browser draws (caret, selection, scrollbar, focus in the accent, the count
+as figures, Ctrl+Enter); B, depth (a dotted bench behind the page, the box
+as a sheet, the toolbar as a tray of keys); C, motion that reports what
+happened. The tile is the one piece shipped so far; the other parts liked
+are in TODO.md under Textmanipulator. Dropped: A's caret, selection and
+focus styling and the Ctrl+Enter hint, B's dotted background, C's
+character-difference badge and self-drawing check. Something to set the
+header off from the body was also tried, none kept: a ruler along its
+bottom edge, a cobalt wash from the tile, an even cobalt band, and dot,
+staggered-dot, diagonal and grid patterns across the row.
+
 ## 2026-10-11 · One page width, one upload pattern
 
 Every tool page that doesn't fill the window uses one column, `max-w-tool`

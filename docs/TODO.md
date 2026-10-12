@@ -54,6 +54,14 @@ Settled choices go in [DECISIONS.md](DECISIONS.md).
     dashed box and `¶` stand for. Today only the ¶ toggle's tooltip counts
     them by name; nothing ties a mark in the text to its meaning.
 - **Dark mode:** the main button's "Kopiera" outline is grey, not teal.
+- **Liked in the 2026-10-11 prototype, not built yet** (see DECISIONS.md,
+  2026-10-12). The count as figures (the number in the foreground, the unit
+  muted, "Markerat" as a tag). After an operation, the words it wrote light
+  up in the accent for about 1.4 s (a word diff of before and after, drawn
+  in a layer behind the text box like the hidden-character marks; a removal
+  gets a thin bar). The whole box turns green while "Kopierad!" shows,
+  since copy takes the whole text. Button faces slide in when they change
+  (not on load), with reduced motion respected.
 
 ### Specialtecken
 
